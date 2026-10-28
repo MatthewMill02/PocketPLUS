@@ -1,0 +1,11 @@
+id,name,type,amount,savings,date
+1,Zakupy spożywcze,Codzienny,-84.50,0,2026-10-24
+2,Wynagrodzenie zlecenia,Praca,1250.00,0,2026-10-25
+3,Bilety komunikacja miejska,Studia,-18.00,2.00,2026-10-25
+4,Książka specjalistyczna,Hobby,-45.00,5.00,2026-10-26
+5,Obiad na mieście,Codzienny,-36.00,0,2026-10-26
+6,Korepetycje,Fucha,150.00,0,2026-10-27
+7,Kawa i przekąska,Codzienny,-14.20,0.80,2026-10-27
+8,Prezent urodzinowy,Prezent,-70.00,0,2026-10-28
+9,Zwrot za zakupy wspólne,Codzienny,35.00,0,2026-10-28
+10,Subskrypcja chmurowa,Hobby,-29.99,0.01,2026-10-28

@@ -1,0 +1,267 @@
+/* Tabela transakcji PocketPLUS oraz panele danych */
+.glass-table-wrapper {
+    width: 100%;
+    background-color: rgba(26, 30, 36, 0.4); /* 40% krycia / przezroczystości tła */
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    margin-bottom: 12px;
+}
+
+.pocket-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-base);
+    text-align: left;
+}
+
+.pocket-table th {
+    background-color: rgba(17, 20, 24, 0.6);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.pocket-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(38, 45, 55, 0.5);
+    color: var(--color-text-main);
+    vertical-align: middle;
+}
+
+.pocket-table tr:hover {
+    background-color: rgba(42, 49, 61, 0.35);
+}
+
+.pocket-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Wyróżnienia kwot i tagów */
+.amount-cell {
+    font-family: monospace, sans-serif;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.amount-expense {
+    color: #e55353;
+}
+
+.amount-income {
+    color: #2ea043;
+}
+
+.savings-tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
+    background-color: rgba(46, 160, 67, 0.15);
+    color: #56d364;
+    font-size: 13px;
+    font-family: monospace, sans-serif;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.btn-row-action {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+}
+
+.btn-row-action:hover {
+    color: var(--color-danger);
+    border-color: rgba(229, 83, 83, 0.3);
+    background-color: var(--color-danger-bg);
+}
+
+/* Formularz szybkiego dodawania transakcji */
+.quick-add-panel {
+    background-color: rgba(26, 30, 36, 0.7);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-top: 14px;
+}
+
+.quick-add-fields {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.quick-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.quick-field label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.quick-field.field-name {
+    flex: 2;
+    min-width: 180px;
+}
+
+.quick-field.field-type {
+    width: 140px;
+}
+
+.quick-field.field-kind {
+    width: 170px;
+}
+
+.quick-field.field-amount {
+    width: 120px;
+}
+
+.quick-field.field-savings {
+    min-width: 130px;
+}
+
+.quick-field.field-submit {
+    flex-shrink: 0;
+}
+
+.flow-toggle-group {
+    display: flex;
+    gap: 4px;
+}
+
+.btn-flow {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.btn-flow.flow-expense.active {
+    background-color: rgba(229, 83, 83, 0.2);
+    border-color: #e55353;
+    color: #ff7b72;
+}
+
+.btn-flow.flow-income.active {
+    background-color: rgba(46, 160, 67, 0.2);
+    border-color: #2ea043;
+    color: #56d364;
+}
+
+.btn-quick-save {
+    padding: 8px 18px;
+    height: 38px;
+    font-weight: 600;
+}
+
+.checkbox-inline-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 13px !important;
+    height: 38px;
+    user-select: none;
+}
+
+.savings-amount-input {
+    margin-top: 4px;
+}
+
+/* Kafelki startowe (Scatter Welcome) */
+.lockdown-banner {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(229, 83, 83, 0.95);
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 100;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.scatter-head-card.is-locked {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(80%);
+}
+
+.active-profile-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.profile-name-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+
+/* Skeleton loader tabeli */
+.table-skeleton {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skeleton-row {
+    height: 36px;
+    background: linear-gradient(90deg, rgba(38, 45, 55, 0.3) 25%, rgba(42, 49, 61, 0.6) 50%, rgba(38, 45, 55, 0.3) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.dashboard-center-column {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-actions-inline {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
