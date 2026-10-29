@@ -8,15 +8,14 @@
 html {
     max-width: 100%;
     overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: #5a3821 #19120b;
+    background-color: var(--color-bg);
 }
 
 body {
     font-family: var(--font-family-main);
     font-size: var(--font-size-base);
     color: var(--color-text-main);
-    background-color: #1a1510;
+    background-color: transparent;
     line-height: 1.5;
     min-height: 100vh;
     width: 100%;
@@ -49,13 +48,25 @@ body::before {
     width: 100%;
     height: 100%;
     background-image: url('../assets/background.png');
-    background-repeat: repeat;
-    background-size: auto;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
     image-rendering: pixelated;
     z-index: -1;
     pointer-events: none;
     transform: translateZ(0);
     will-change: transform;
+    transition: filter var(--transition-normal);
+}
+
+/* Wariant fioletowy dla bazy długów (Marco) */
+body.theme-debts::before {
+    filter: hue-rotate(250deg) saturate(1.4) brightness(0.9);
+}
+
+/* Wariant czerwony dla bazy subskrypcji (Manhattan) */
+body.theme-subscriptions::before {
+    filter: hue-rotate(330deg) saturate(1.5) brightness(0.95);
 }
 
 body.modal-open {

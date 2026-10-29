@@ -5,6 +5,7 @@
 function showWelcomeScreen() {
     state.currentScreen = "welcome";
     document.body.className = "screen-welcome";
+    document.body.classList.remove("theme-debts", "theme-subscriptions");
     const appHeader = document.getElementById("appHeader");
     const welcomeScreen = document.getElementById("welcomeScreen");
     const dashboardScreen = document.getElementById("dashboardScreen");
@@ -21,24 +22,25 @@ function renderWelcomeScatterHeads() {
     if (!container) return;
     container.innerHTML = "";
 
-    // 1 kafelek Matthew.PNG, pozostałe atrapy z icon.png
+    // 3 kafelki faktycznych danych + atrapy z icon.png
     const tiles = [
-        { type: "matthew", name: "Matthew", img: "assets/Matthew.PNG" },
-        { type: "decoy", name: "Gość", img: "assets/icon.png" },
-        { type: "decoy", name: "Archiwum", img: "assets/icon.png" },
-        { type: "decoy", name: "Raporty", img: "assets/icon.png" },
-        { type: "decoy", name: "Audyt", img: "assets/icon.png" }
+        { type: "db", dbId: "transactions", name: "Matthew", img: "assets/Matthew.PNG", avatarClass: "" },
+        { type: "db", dbId: "debts", name: "Marco", img: "assets/Matthew.PNG", avatarClass: "avatar-purple" },
+        { type: "db", dbId: "subscriptions", name: "Manhattan", img: "assets/Matthew.PNG", avatarClass: "avatar-red" },
+        { type: "decoy", name: "Gość", img: "assets/icon.png", avatarClass: "" },
+        { type: "decoy", name: "Archiwum", img: "assets/icon.png", avatarClass: "" },
+        { type: "decoy", name: "Audyt", img: "assets/icon.png", avatarClass: "" }
     ];
 
     const shuffled = [...tiles].sort(() => Math.random() - 0.5);
 
     const positions = [
         { top: "18%", left: "15%" },
-        { top: "22%", right: "18%" },
-        { bottom: "20%", left: "20%" },
-        { bottom: "24%", right: "16%" },
-        { top: "52%", left: "8%" },
-        { top: "50%", right: "10%" }
+        { top: "20%", right: "18%" },
+        { bottom: "18%", left: "18%" },
+        { bottom: "22%", right: "16%" },
+        { top: "50%", left: "10%" },
+        { top: "52%", right: "12%" }
     ];
 
     const isLocked = isCurrentlyLocked();
@@ -53,15 +55,15 @@ function renderWelcomeScatterHeads() {
         });
 
         card.innerHTML = `
-            <img src="${tile.img}" alt="${escapeHtml(tile.name)}" class="scatter-head-img" onerror="this.src='assets/icon.png'">
+            <img src="${tile.img}" alt="${escapeHtml(tile.name)}" class="scatter-head-img ${tile.avatarClass}" onerror="this.src='assets/icon.png'">
             <span class="scatter-head-name">${escapeHtml(tile.name)}</span>
         `;
 
         card.addEventListener("click", () => {
             if (isCurrentlyLocked()) return;
 
-            if (tile.type === "matthew") {
-                openDashboardScreen();
+            if (tile.type === "db") {
+                openDashboardScreen(tile.dbId);
             } else {
                 triggerLockdown();
             }

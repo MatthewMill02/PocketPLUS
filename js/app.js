@@ -19,6 +19,16 @@ function initEvents() {
         btnNavHome.addEventListener("click", showWelcomeScreen);
     }
 
+    // Przełączanie 3 podstron (Transakcje, Długi, Subskrypcje)
+    document.querySelectorAll(".btn-subpage").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            const dbId = e.currentTarget.getAttribute("data-db");
+            if (dbId) {
+                openDashboardScreen(dbId);
+            }
+        });
+    });
+
     // Odświeżanie danych z chmury
     const btnRefreshData = document.getElementById("btnRefreshData");
     if (btnRefreshData) {
@@ -135,6 +145,57 @@ function initEvents() {
         quickCheckSavings.addEventListener("change", (e) => {
             quickInputSavingsAmount.style.display = e.target.checked ? "block" : "none";
             if (e.target.checked) quickInputSavingsAmount.focus();
+        });
+    }
+
+    // Przycisk ustawień (zarządzanie typami)
+    const btnSettingsModal = document.getElementById("btnSettingsModal");
+    if (btnSettingsModal) {
+        btnSettingsModal.addEventListener("click", openSettingsModal);
+    }
+
+    const btnAddNewType = document.getElementById("btnAddNewType");
+    if (btnAddNewType) {
+        btnAddNewType.addEventListener("click", handleAddType);
+    }
+
+    // Przycisk dodawania na telefonie (otwiera modal wpisu)
+    const btnOpenMobileAddModal = document.getElementById("btnOpenMobileAddModal");
+    if (btnOpenMobileAddModal) {
+        btnOpenMobileAddModal.addEventListener("click", () => {
+            openEntryEditModal(null);
+        });
+    }
+
+    // Modal edycji wpisu
+    const entryEditForm = document.getElementById("entryEditForm");
+    if (entryEditForm) {
+        entryEditForm.addEventListener("submit", handleEntryEditSubmit);
+    }
+
+    const btnDeleteCurrentEntry = document.getElementById("btnDeleteCurrentEntry");
+    if (btnDeleteCurrentEntry) {
+        btnDeleteCurrentEntry.addEventListener("click", handleDeleteFromEditModal);
+    }
+
+    // Panel boczny statystyk na mobile
+    const btnToggleMobileStats = document.getElementById("btnToggleMobileStats");
+    const mobileSidebarBackdrop = document.getElementById("mobileSidebarBackdrop");
+    const dashboardStatsSidebar = document.getElementById("dashboardStatsSidebar");
+
+    if (btnToggleMobileStats && dashboardStatsSidebar) {
+        btnToggleMobileStats.addEventListener("click", () => {
+            dashboardStatsSidebar.classList.toggle("mobile-open");
+            if (mobileSidebarBackdrop) {
+                mobileSidebarBackdrop.style.display = dashboardStatsSidebar.classList.contains("mobile-open") ? "block" : "none";
+            }
+        });
+    }
+
+    if (mobileSidebarBackdrop && dashboardStatsSidebar) {
+        mobileSidebarBackdrop.addEventListener("click", () => {
+            dashboardStatsSidebar.classList.remove("mobile-open");
+            mobileSidebarBackdrop.style.display = "none";
         });
     }
 

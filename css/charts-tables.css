@@ -1,7 +1,7 @@
 /* Tabela transakcji PocketPLUS oraz panele danych */
 .glass-table-wrapper {
     width: 100%;
-    background-color: rgba(26, 30, 36, 0.4); /* 40% krycia / przezroczystości tła */
+    background-color: rgba(26, 30, 36, 0.4); /* 40% krycia tła */
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     overflow-x: auto;
@@ -21,20 +21,33 @@
     font-weight: 600;
     padding: 10px 14px;
     border-bottom: 1px solid var(--color-border);
-    font-size: 13px;
+    font-size: 14px;
     letter-spacing: 0.3px;
     text-transform: uppercase;
 }
 
 .pocket-table td {
-    padding: 11px 14px;
-    border-bottom: 1px solid rgba(38, 45, 55, 0.5);
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(38, 45, 55, 0.4);
     color: var(--color-text-main);
     vertical-align: middle;
 }
 
+/* Lekki odcień tła wiersza zależnie od zysku / wydatku */
+.pocket-table tr.row-expense {
+    background-color: rgba(229, 83, 83, 0.05);
+}
+
+.pocket-table tr.row-income {
+    background-color: rgba(46, 160, 67, 0.06);
+}
+
+.pocket-table tr.row-savings {
+    background-color: rgba(88, 166, 255, 0.06);
+}
+
 .pocket-table tr:hover {
-    background-color: rgba(42, 49, 61, 0.35);
+    background-color: rgba(42, 49, 61, 0.4) !important;
 }
 
 .pocket-table tr:last-child td {
@@ -46,23 +59,28 @@
     font-family: monospace, sans-serif;
     font-weight: bold;
     font-size: 15px;
+    white-space: nowrap;
 }
 
 .amount-expense {
-    color: #e55353;
+    color: #ff7b72;
 }
 
 .amount-income {
-    color: #2ea043;
+    color: #56d364;
 }
 
-.savings-tag {
+.amount-savings-blue {
+    color: #58a6ff !important; /* Niebieski dla oszczędności */
+}
+
+.savings-tag-blue {
     display: inline-block;
     padding: 2px 7px;
     border-radius: var(--radius-sm);
-    background-color: rgba(46, 160, 67, 0.15);
-    color: #56d364;
-    font-size: 13px;
+    background-color: rgba(88, 166, 255, 0.15);
+    color: #58a6ff;
+    font-size: 14px;
     font-family: monospace, sans-serif;
 }
 
@@ -72,125 +90,182 @@
     border-radius: var(--radius-sm);
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    font-size: 12px;
+    font-size: 14px;
     color: var(--color-text-muted);
 }
 
 .btn-row-action {
     background: transparent;
-    border: 1px solid transparent;
+    border: 1px solid var(--color-border);
     color: var(--color-text-muted);
     cursor: pointer;
-    padding: 4px 6px;
+    padding: 4px 8px;
     border-radius: var(--radius-sm);
-    font-size: 12px;
+    font-size: 14px;
+    transition: all var(--transition-fast);
 }
 
 .btn-row-action:hover {
-    color: var(--color-danger);
-    border-color: rgba(229, 83, 83, 0.3);
-    background-color: var(--color-danger-bg);
+    color: var(--color-text-main);
+    border-color: var(--color-text-muted);
+    background-color: var(--color-surface-hover);
 }
 
-/* Formularz szybkiego dodawania transakcji */
+/* NOWY WYRÓWNANY I ELEGANCKI FORMULARZ SZYBKIEGO DODAWANIA */
 .quick-add-panel {
-    background-color: rgba(26, 30, 36, 0.7);
+    background-color: rgba(26, 30, 36, 0.85);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: 12px 16px;
+    padding: 14px 18px;
     margin-top: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
-.quick-add-fields {
+/* Przycisk dodawania na telefonie */
+.mobile-add-action-wrapper {
+    display: none;
+    margin-top: 14px;
+    width: 100%;
+}
+
+.btn-mobile-add {
+    width: 100%;
+    height: 44px;
+    background-color: #2a4365;
+    border: 1px solid #3b5982;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--transition-fast);
+}
+
+.btn-mobile-add:active {
+    background-color: #1e314b;
+}
+
+@media (max-width: 900px) {
+    /* Na telefonie ukrywamy dolny formularz desktopowy, a pokazujemy przycisk otwierający pop-up */
+    .quick-add-panel {
+        display: none !important;
+    }
+    .mobile-add-action-wrapper {
+        display: block !important;
+    }
+}
+
+.quick-add-form {
+    width: 100%;
+}
+
+.quick-add-grid {
+    display: grid;
+    grid-template-columns: 2.5fr 1.3fr 1.3fr 1.1fr auto auto;
     gap: 12px;
     align-items: flex-end;
-    flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+    .quick-add-grid {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 .quick-field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 }
 
 .quick-field label {
-    font-size: 12px;
+    font-size: 14px;
     color: var(--color-text-muted);
+    font-weight: 500;
 }
 
-.quick-field.field-name {
-    flex: 2;
-    min-width: 180px;
-}
-
-.quick-field.field-type {
-    width: 140px;
-}
-
-.quick-field.field-kind {
-    width: 170px;
-}
-
-.quick-field.field-amount {
-    width: 120px;
-}
-
-.quick-field.field-savings {
-    min-width: 130px;
-}
-
-.quick-field.field-submit {
-    flex-shrink: 0;
+.quick-field .form-input,
+.quick-field .form-select {
+    height: 38px;
+    font-size: 14px;
+    padding: 0 10px;
+    box-sizing: border-box;
 }
 
 .flow-toggle-group {
     display: flex;
     gap: 4px;
+    height: 38px;
 }
 
 .btn-flow {
     flex: 1;
-    padding: 7px 10px;
+    height: 38px;
+    padding: 0 12px;
     border: 1px solid var(--color-border);
     background-color: var(--color-bg);
     color: var(--color-text-muted);
-    font-size: 12px;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
 }
 
 .btn-flow.flow-expense.active {
-    background-color: rgba(229, 83, 83, 0.2);
+    background-color: rgba(229, 83, 83, 0.25);
     border-color: #e55353;
     color: #ff7b72;
 }
 
 .btn-flow.flow-income.active {
-    background-color: rgba(46, 160, 67, 0.2);
+    background-color: rgba(46, 160, 67, 0.25);
     border-color: #2ea043;
     color: #56d364;
 }
 
-.btn-quick-save {
-    padding: 8px 18px;
+.checkbox-savings-box {
     height: 38px;
-    font-weight: 600;
-}
-
-.checkbox-inline-label {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    padding: 0 10px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 13px !important;
-    height: 38px;
     user-select: none;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--color-text-main);
 }
 
-.savings-amount-input {
-    margin-top: 4px;
+.checkbox-savings-box input {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.btn-quick-save {
+    height: 38px;
+    padding: 0 22px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    background-color: #2a4365;
+    border: 1px solid #3b5982;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.btn-quick-save:hover {
+    background-color: #1e314b;
 }
 
 /* Kafelki startowe (Scatter Welcome) */
@@ -225,8 +300,15 @@
     border-radius: var(--radius-sm);
 }
 
+.active-profile-pill img.mini-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+}
+
 .profile-name-text {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-main);
 }
@@ -252,16 +334,61 @@
     100% { background-position: -200% 0; }
 }
 
-.dashboard-center-column {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-}
-
 .control-actions-inline {
     display: flex;
     gap: 12px;
     align-items: center;
+}
+
+/* Modale szczegółów / edycji wpisu oraz ustawień typów */
+.modal-window.modal-entry-edit {
+    max-width: 520px;
+    width: 100%;
+}
+
+.modal-window.modal-settings-panel {
+    max-width: 540px;
+    width: 100%;
+}
+
+.types-management-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 6px;
+    background-color: rgba(17, 20, 24, 0.5);
+}
+
+.type-list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+}
+
+.btn-type-delete {
+    background: transparent;
+    border: none;
+    color: var(--color-danger);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+}
+
+.btn-type-delete:hover {
+    color: #ff7b72;
+}
+
+.add-type-inline-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
 }

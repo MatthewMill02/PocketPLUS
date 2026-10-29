@@ -85,9 +85,16 @@ async function processSyncQueue() {
             pass: state.adminPassword
         };
 
-        if (task.type === "addTransaction") {
+        if (task.type === "addType") {
+            params.name = task.name;
+        } else if (task.type === "deleteType") {
+            params.name = task.name;
+        } else if (task.type.startsWith("edit")) {
+            params.id = task.id;
             params.data = JSON.stringify(task.data);
-        } else if (task.type === "deleteTransaction") {
+        } else if (task.type.startsWith("add")) {
+            params.data = JSON.stringify(task.data);
+        } else if (task.type.startsWith("delete")) {
             params.id = task.id;
         }
 

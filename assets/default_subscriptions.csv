@@ -1,0 +1,6 @@
+id,name,type,amount,savings,first_payment,last_payment
+1,Pociąg PKP,Studia,10.04,0.96,2022-10-01,2026-09-22
+2,Netflix,Hobby,21.00,0.00,2022-10-01,2026-09-22
+3,Spotify,Hobby,19.99,0.00,2023-01-15,2026-10-15
+4,Karnet Siłownia,Codzienny,120.00,10.00,2024-02-01,2026-10-01
+5,Domeny & Hosting,Praca,45.00,5.00,2024-05-10,2026-10-10

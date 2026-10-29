@@ -6,22 +6,36 @@
     <title>PocketPLUS - Budżet Codzienny</title>
     <meta name="description" content="Aplikacja do zarządzania codziennym budżetem i wydatkami.">
     <link rel="icon" type="image/png" href="assets/icon.png">
+    <style>
+        html {
+            background-color: #111418;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="screen-welcome">
     <!-- GÓRNY PASEK NAWIGACYJNY (Ukryty na ekranie powitalnym) -->
     <header class="app-header" id="appHeader" style="display: none;">
         <div class="header-left">
-            <button id="btnNavHome" class="nav-btn" title="Powrót do ekranu wyboru profilu">
+            <button id="btnNavHome" class="nav-btn" title="Powrót do menu głównego">
                 <span class="nav-icon">&lt;</span> Start
             </button>
             <div class="active-profile-pill">
-                <img src="assets/Matthew.PNG" alt="Matthew" class="mini-avatar" onerror="this.src='assets/icon.png'">
-                <span class="profile-name-text">Matthew</span>
+                <img id="navProfileAvatar" src="assets/Matthew.PNG" alt="Profil" class="mini-avatar" onerror="this.src='assets/icon.png'">
+                <span id="navProfileName" class="profile-name-text">Matthew</span>
             </div>
         </div>
 
         <div class="header-right">
+            <!-- Przycisk Ustawienia: widoczny tylko po zalogowaniu -->
+            <button id="btnSettingsModal" class="action-btn" style="display: none;" title="Zarządzaj słownikami i typami">[Ustawienia]</button>
             <button id="btnRefreshData" class="action-btn" title="Pobierz najświeższe dane ze skryptu">[Odśwież]</button>
             <button id="btnAdminLoginModal" class="action-btn" title="Wpisz hasło do synchronizacji">[Dostęp]</button>
 
@@ -50,7 +64,7 @@
     <main id="welcomeScreen" class="welcome-screen">
         <div class="welcome-center-box" id="welcomeCenterBox">
             <h1 class="welcome-title">PocketPLUS</h1>
-            <p class="welcome-subtitle">Wybierz profil</p>
+            <p class="welcome-subtitle">Wybierz dane</p>
         </div>
         
         <!-- Baner z informacją o zablokowaniu (jeśli kliknięto złą ikonę) -->
@@ -59,25 +73,90 @@
         </div>
 
         <div id="headsScatterContainer" class="heads-scatter-container">
-            <!-- Kafelki generowane dynamicznie w JS: 1 z Matthew.PNG, reszta z icon.png -->
+            <!-- Kafelki generowane dynamicznie w JS: Matthew, Marco, Manhattan + atrapy icon.png -->
         </div>
     </main>
 
-    <!-- 2. WIDOK GŁÓWNY TRANSAKCJI (DASHBOARD) -->
+    <!-- 2. WIDOK GŁÓWNY TRANSAKCJI / DŁUGÓW / SUBSKRYPCJI (DASHBOARD - UKŁAD 2-KOLUMNOWY) -->
     <main id="dashboardScreen" class="dashboard-screen" style="display: none;">
+        
+        <!-- TRZY DUŻE WYŚRODKOWANE PRZYCISKI DO PRZEŁĄCZANIA PODSTRON / DANYCH -->
+        <div class="subpage-nav-bar" id="subpageNavBar">
+            <button type="button" class="btn-subpage active" data-db="transactions" id="btnSubpageTransactions">
+                Transakcje
+            </button>
+            <button type="button" class="btn-subpage" data-db="debts" id="btnSubpageDebts">
+                Długi
+            </button>
+            <button type="button" class="btn-subpage" data-db="subscriptions" id="btnSubpageSubscriptions">
+                Subskrypcje
+            </button>
+        </div>
+
+        <!-- Przycisk mobilny do otwierania panelu bocznego statystyk -->
+        <button type="button" id="btnToggleMobileStats" class="mobile-stats-toggle-btn">
+            <span>[Statystyki konta]</span>
+        </button>
+        <div id="mobileSidebarBackdrop" class="mobile-sidebar-backdrop"></div>
+
         <div class="dashboard-main-layout">
-            <div class="dashboard-center-column">
+            
+            <!-- LEWA WĄSKA KOLUMNA: STATYSTYKI (PODĄŻA ZA SCROLLEM) -->
+            <aside class="dashboard-stats-sidebar" id="dashboardStatsSidebar">
+                <div class="stats-card-panel">
+                    <div class="stats-card-header">
+                        <h3 id="statsCardTitle">Podsumowanie</h3>
+                        <span id="statsScopeBadge" class="stats-badge-tag">Wszystko</span>
+                    </div>
+
+                    <!-- Stan konta -->
+                    <div class="stats-kpi-block">
+                        <span class="stats-kpi-label">Stan konta</span>
+                        <span id="statAccountBalance" class="stats-kpi-val">0.00 zł</span>
+                    </div>
+
+                    <!-- Poduszka finansowa -->
+                    <div class="stats-kpi-block">
+                        <span class="stats-kpi-label">Poduszka finansowa</span>
+                        <span id="statFinancialBuffer" class="stats-kpi-val savings">0.00 zł</span>
+                    </div>
+
+                    <!-- Kreska oddzielająca -->
+                    <div class="stats-divider" id="statsDivider"></div>
+
+                    <!-- Dynamiczne stany na 3 kolejne miesiące (aktualny, -1, -2) -->
+                    <div class="stats-months-list" id="statsMonthsBlock">
+                        <span class="stats-kpi-label" style="margin-bottom: 2px;">Bilans miesięczny:</span>
+                        
+                        <div class="stats-month-item">
+                            <span id="statMonthLabel0" class="stats-month-name">Miesiąc 0</span>
+                            <span id="statMonthVal0" class="stats-month-amount">0.00 zł</span>
+                        </div>
+                        <div class="stats-month-item">
+                            <span id="statMonthLabel1" class="stats-month-name">Miesiąc -1</span>
+                            <span id="statMonthVal1" class="stats-month-amount">0.00 zł</span>
+                        </div>
+                        <div class="stats-month-item">
+                            <span id="statMonthLabel2" class="stats-month-name">Miesiąc -2</span>
+                            <span id="statMonthVal2" class="stats-month-amount">0.00 zł</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- PRAWA SZEROKA KOLUMNA: TABELA, WYSZUKIWARKA, FORMULARZ -->
+            <div class="dashboard-main-column">
                 
                 <!-- KONTROLKI: WYSZUKIWARKA, SORTOWANIE, FILTRY TYPU -->
                 <div class="dashboard-controls" id="dashboardControls">
                     <div class="search-sort-bar">
                         <div class="search-wrapper">
                             <img src="assets/lupa.png" alt="Szukaj" class="search-bar-icon">
-                            <input type="text" id="searchInput" class="search-input" placeholder="Szukaj transakcji po nazwie...">
+                            <input type="text" id="searchInput" class="search-input" placeholder="Szukaj po nazwie...">
                             <button id="btnClearSearch" class="clear-btn" style="display: none;">[x]</button>
                         </div>
                         <div class="control-actions-inline">
-                            <div class="filter-type-wrapper">
+                            <div class="filter-type-wrapper" id="filterTypeWrapper">
                                 <label for="filterTypeSelect" class="control-field-label">Typ:</label>
                                 <select id="filterTypeSelect" class="form-select">
                                     <option value="all">Wszystkie typy</option>
@@ -88,8 +167,8 @@
                                 <select id="sortSelect" class="form-select">
                                     <option value="date_desc" selected>Data (Najnowsze)</option>
                                     <option value="date_asc">Data (Najstarsze)</option>
-                                    <option value="amount_asc">Kwota (Wydatki rosnąco)</option>
-                                    <option value="amount_desc">Kwota (Zyski malejąco)</option>
+                                    <option value="amount_asc">Kwota (Rosnąco)</option>
+                                    <option value="amount_desc">Kwota (Malejąco)</option>
                                     <option value="name_asc">Nazwa (A-Z)</option>
                                 </select>
                             </div>
@@ -108,28 +187,27 @@
                     </div>
 
                     <table class="pocket-table" id="transactionsTable">
-                        <thead>
+                        <thead id="pocketTableThead">
                             <tr>
                                 <th style="width: 60px;">ID</th>
                                 <th>Nazwa</th>
                                 <th style="width: 140px;">Typ</th>
-                                <th style="width: 130px; text-align: right;">Kwota</th>
-                                <th style="width: 120px; text-align: right;">Oszczędność</th>
-                                <th style="width: 120px; text-align: center;">Data</th>
-                                <th style="width: 60px; text-align: center;">Akcje</th>
+                                <th style="width: 150px; text-align: right;">Kwota</th>
+                                <th style="width: 110px; text-align: center;">Data</th>
+                                <th style="width: 80px; text-align: center;">Akcje</th>
                             </tr>
                         </thead>
                         <tbody id="transactionsTbody">
-                            <!-- Wiersze generowane w JS -->
+                            <!-- Wiersze generowane dynamicznie w JS -->
                         </tbody>
                     </table>
 
                     <div id="emptyTableMessage" class="empty-state" style="display: none;">
-                        <p>Brak transakcji do wyświetlenia dla podanych kryteriów.</p>
+                        <p>Brak danych do wyświetlenia dla podanych kryteriów.</p>
                     </div>
                 </div>
 
-                <!-- PASEK PAGINACJI (POWYŻEJ FORMULARZA SZYBKIEGO DODAWANIA) -->
+                <!-- PASEK PAGINACJI -->
                 <div id="tablePaginationBar" class="shelves-pagination-bar">
                     <button type="button" id="btnPagePrev" class="pagination-btn" title="Poprzednia strona" aria-label="Poprzednia strona">
                         <svg class="pagination-arrow-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -152,15 +230,39 @@
                     </button>
                 </div>
 
-                <!-- SZYBKIE DODAWANIE TRANSAKCJI (ZAWSZE POD PAGINACJĄ) -->
+                <!-- PRZYCISK DODAWANIA DLA TELEFONU (OTWIERA POP-UP EDYCJI / NOWEGO WPISU) -->
+                <div class="mobile-add-action-wrapper" id="mobileAddActionWrapper">
+                    <button type="button" id="btnOpenMobileAddModal" class="btn-mobile-add">
+                        + Dodaj nowy wpis
+                    </button>
+                </div>
+
+                <!-- NOWY ELEGANCKI I WYRÓWNANY FORMULARZ SZYBKIEGO DODAWANIA (TYLKO DESKTOP / LAPTOP) -->
                 <section class="quick-add-panel" id="quickAddPanel">
                     <form id="quickAddForm" class="quick-add-form" autocomplete="off">
-                        <div class="quick-add-fields">
+                        <div class="quick-add-grid">
                             <div class="quick-field field-name">
-                                <label for="quickInputName">Nazwa transakcji *</label>
+                                <label for="quickInputName" id="labelQuickName">Nazwa wpisu *</label>
                                 <input type="text" id="quickInputName" class="form-input" placeholder="np. Zakupy, Kawa, Bilet" required>
                             </div>
-                            <div class="quick-field field-type">
+
+                            <div class="quick-field field-person" id="fieldQuickPerson" style="display: none;">
+                                <label for="quickInputPerson">Osoba *</label>
+                                <input type="text" id="quickInputPerson" class="form-input" list="debtsPersonsDatalist" placeholder="np. Bartek, Natan">
+                                <datalist id="debtsPersonsDatalist"></datalist>
+                            </div>
+
+                            <div class="quick-field field-loan-date" id="fieldQuickLoanDate" style="display: none;">
+                                <label for="quickInputLoanDate">Data pożyczki</label>
+                                <input type="date" id="quickInputLoanDate" class="form-input">
+                            </div>
+
+                            <div class="quick-field field-repay-date" id="fieldQuickRepayDate" style="display: none;">
+                                <label for="quickInputRepayDate">Data spłaty</label>
+                                <input type="date" id="quickInputRepayDate" class="form-input">
+                            </div>
+
+                            <div class="quick-field field-type" id="fieldQuickType">
                                 <label for="quickSelectType">Typ</label>
                                 <select id="quickSelectType" class="form-select">
                                     <option value="Codzienny">Codzienny</option>
@@ -169,28 +271,33 @@
                                     <option value="Praca">Praca</option>
                                     <option value="Hobby">Hobby</option>
                                     <option value="Fucha">Fucha</option>
+                                    <option value="Oszczędności">Oszczędności</option>
                                 </select>
                             </div>
-                            <div class="quick-field field-kind">
-                                <label>Charakter</label>
+
+                            <div class="quick-field field-kind" id="fieldQuickKind">
+                                <label id="labelQuickKind">Charakter</label>
                                 <div class="flow-toggle-group">
                                     <button type="button" class="btn-flow active flow-expense" id="btnKindExpense" data-kind="expense">Wydatek (-)</button>
                                     <button type="button" class="btn-flow flow-income" id="btnKindIncome" data-kind="income">Zysk (+)</button>
                                 </div>
                             </div>
+
                             <div class="quick-field field-amount">
-                                <label for="quickInputAmount">Koszt (zł) *</label>
+                                <label for="quickInputAmount" id="labelQuickAmount">Koszt (zł) *</label>
                                 <input type="number" id="quickInputAmount" class="form-input" step="0.01" min="0.01" placeholder="0.00" required>
                             </div>
-                            <div class="quick-field field-savings">
-                                <label class="checkbox-inline-label">
+
+                            <div class="quick-field field-savings" id="fieldQuickSavings">
+                                <label>Oszczędność (końcówka)</label>
+                                <label class="checkbox-savings-box" title="Zaokrąglenie w górę do pełnej złotówki - reszta trafia do oszczędności">
                                     <input type="checkbox" id="quickCheckSavings">
-                                    <span>Oszczędność</span>
+                                    <span id="quickSavingsLabelText">Dodaj resztę</span>
                                 </label>
-                                <input type="number" id="quickInputSavingsAmount" class="form-input savings-amount-input" step="0.01" min="0" placeholder="Kwota (zł)" style="display: none;">
                             </div>
+
                             <div class="quick-field field-submit">
-                                <button type="submit" id="btnQuickSubmit" class="btn-primary btn-quick-save">Zapisz</button>
+                                <button type="submit" id="btnQuickSubmit" class="btn-quick-save">Zapisz</button>
                             </div>
                         </div>
                     </form>
@@ -200,15 +307,15 @@
         </div>
     </main>
 
-    <!-- MODAL: HASŁO DOSTĘPU (SYNCHRONIZACJA Z GOOGLE SHEETS) -->
+    <!-- MODAL 1: AUTORYZACJA HASŁEM DOSTĘPU -->
     <div id="adminLoginModal" class="modal-backdrop" style="display: none;">
         <div class="modal-window modal-small">
             <form id="adminLoginForm">
                 <div class="modal-header">
-                    <h2>Autoryzacja synchronizacji</h2>
+                    <h2>Autoryzacja dostępu</h2>
                 </div>
                 <div class="modal-body">
-                    <p class="modal-hint">Wpisz hasło dostępu do arkusza Google Spreadsheet, aby włączyć zapis w chmurze.</p>
+                    <p class="modal-hint">Wpisz hasło dostępu do bazy Google Spreadsheet, aby pobrać realne dane i umożliwić synchronizację.</p>
                     <div class="form-group">
                         <label for="adminPasswordInput">Hasło dostępu:</label>
                         <input type="password" id="adminPasswordInput" class="form-input" required autocomplete="current-password" placeholder="Wpisz hasło">
@@ -217,16 +324,98 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" data-close="adminLoginModal">Anuluj</button>
-                    <button type="submit" id="btnSubmitAdminLogin" class="btn-primary">Autoryzuj</button>
+                    <button type="submit" id="btnSubmitAdminLogin" class="btn-primary">Zaloguj</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SZCZEGÓŁY / EDYCJA WPISU (ZAMIAST PROSTEGO USUNIĘCIA) -->
+    <div id="entryEditModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-window modal-entry-edit">
+            <div class="modal-header">
+                <h2 id="entryEditModalTitle">Szczegóły wpisu</h2>
+            </div>
+            <form id="entryEditForm">
+                <input type="hidden" id="editEntryId">
+                <div class="modal-body">
+                    <div class="form-group" id="groupEditPerson" style="display: none;">
+                        <label for="editEntryPerson">Osoba *</label>
+                        <input type="text" id="editEntryPerson" class="form-input" list="debtsPersonsDatalist">
+                    </div>
+                    <div class="form-group">
+                        <label for="editEntryName" id="labelEditEntryName">Nazwa *</label>
+                        <input type="text" id="editEntryName" class="form-input" required>
+                    </div>
+                    <div class="form-group" id="groupEditType">
+                        <label for="editEntryType">Typ</label>
+                        <select id="editEntryType" class="form-select"></select>
+                    </div>
+                    <div class="form-group" id="groupEditDebtType" style="display: none;">
+                        <label for="editEntryDebtType">Typ długu</label>
+                        <select id="editEntryDebtType" class="form-select">
+                            <option value="Dług u mnie">Dług u mnie</option>
+                            <option value="Dług u osoby">Dług u osoby</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEntryAmount" id="labelEditEntryAmount">Kwota (zł) *</label>
+                        <input type="number" id="editEntryAmount" class="form-input" step="0.01" required>
+                    </div>
+                    <div class="form-group" id="groupEditSavings">
+                        <label for="editEntrySavings">Oszczędność (zł)</label>
+                        <input type="number" id="editEntrySavings" class="form-input" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="editEntryDate" id="labelEditEntryDate">Data</label>
+                        <input type="date" id="editEntryDate" class="form-input">
+                    </div>
+                    <div class="form-group" id="groupEditRepaymentDate" style="display: none;">
+                        <label for="editEntryRepaymentDate">Data spłaty (opcjonalnie)</label>
+                        <input type="date" id="editEntryRepaymentDate" class="form-input">
+                    </div>
+                    <div id="entryEditError" class="form-error" style="display: none;"></div>
+                </div>
+                <div class="modal-footer" style="display: flex; justify-content: space-between;">
+                    <button type="button" id="btnDeleteCurrentEntry" class="btn-secondary" style="color: #ff7b72; border-color: rgba(239, 68, 68, 0.4);">Usuń wpis</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn-secondary" data-close="entryEditModal">Anuluj</button>
+                        <button type="submit" id="btnSaveEntryChanges" class="btn-primary">Zapisz zmiany</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: USTAWIENIA BAZY (ZARZĄDZANIE TYPAMI Z ZAKŁADKI type (set and stat)) -->
+    <div id="settingsModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-window modal-settings-panel">
+            <div class="modal-header">
+                <h2>Ustawienia: type (set and stat)</h2>
+            </div>
+            <div class="modal-body">
+                <p class="modal-hint">Zarządzaj dostępnymi typami transakcji w bazie danych.</p>
+                
+                <div class="add-type-inline-form">
+                    <input type="text" id="newTypeNameInput" class="form-input" placeholder="Wpisz nowy typ (np. Zdrowie, Samochód)">
+                    <button type="button" id="btnAddNewType" class="btn-primary" style="white-space: nowrap;">[+] Dodaj typ</button>
+                </div>
+                <div id="newTypeError" class="form-error" style="display: none; margin-top: 6px;"></div>
+
+                <div class="types-management-list" id="typesManagementList">
+                    <!-- Dynamiczna lista typów z opcją usunięcia -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" data-close="settingsModal">Zamknij</button>
+            </div>
         </div>
     </div>
 
     <!-- STOPKA -->
     <footer class="app-footer" id="appFooter">
         <div class="footer-content">
-            <span>&copy; PocketPLUS | Budżet codzienny</span>
+            <span>&copy; PocketPLUS | wersja 1.0.1</span>
         </div>
     </footer>
 

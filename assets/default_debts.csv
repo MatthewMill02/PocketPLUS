@@ -1,0 +1,6 @@
+id,person,name,debt_type,amount,loan_date,repayment_date,update
+1,Bartek,Kebab,Dług u mnie,10.00,2026-05-10,2026-10-03,2026-10-03
+2,Natan,Wyjazd,Dług u osoby,100.00,2026-07-11,,2026-07-11
+3,Kamil,Bilety kino,Dług u mnie,35.00,2026-08-15,2026-09-01,2026-09-01
+4,Michał,Pizza,Dług u mnie,25.50,2026-09-20,,2026-09-20
+5,Paweł,Sprzęt audio,Dług u osoby,150.00,2026-10-01,,2026-10-01
