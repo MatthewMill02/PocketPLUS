@@ -24,8 +24,9 @@
     <!-- GÓRNY PASEK NAWIGACYJNY (Ukryty na ekranie powitalnym) -->
     <header class="app-header" id="appHeader" style="display: none;">
         <div class="header-left">
-            <button id="btnNavHome" class="nav-btn" title="Powrót do menu głównego">
-                <span class="nav-icon">&lt;</span> Start
+            <!-- Hamburger po lewej stronie belki -->
+            <button type="button" id="btnMobileMenuHamburger" class="mobile-hamburger-btn" title="Menu opcji">
+                ☰
             </button>
             <div class="active-profile-pill">
                 <img id="navProfileAvatar" src="assets/Matthew.PNG" alt="Profil" class="mini-avatar" onerror="this.src='assets/icon.png'">
@@ -34,31 +35,85 @@
         </div>
 
         <div class="header-right">
-            <!-- Przycisk Ustawienia: widoczny tylko po zalogowaniu -->
-            <button id="btnSettingsModal" class="action-btn" style="display: none;" title="Zarządzaj słownikami i typami">[Ustawienia]</button>
-            <button id="btnRefreshData" class="action-btn" title="Pobierz najświeższe dane ze skryptu">[Odśwież]</button>
-            <button id="btnAdminLoginModal" class="action-btn" title="Wpisz hasło do synchronizacji">[Dostęp]</button>
+            <!-- PRZYCISK DODAJ REKORD PRZY PRAWEJ KRAWĘDZI -->
+            <button type="button" id="btnHeaderAddEntry" class="btn-header-add" title="Dodaj nowy rekord">
+                + Dodaj rekord
+            </button>
 
-            <!-- Wskaźnik stanu synchronizacji i kolejki zadań w tle -->
-            <div id="syncStatusWrapper" class="sync-status-wrapper" style="display: none;">
-                <button id="btnSyncStatus" class="sync-status-btn" title="Kolejka synchronizacji w chmurze">
-                    <img id="syncStatusImg" src="assets/sync.png" alt="Status synchronizacji" class="sync-icon-img">
-                </button>
-                <button id="btnLogoutAdmin" class="logout-btn" title="Wyloguj">[Wyloguj]</button>
+            <!-- Wersja desktopowa przycisków akcji -->
+            <div class="desktop-header-actions">
+                <button id="btnSettingsModal" class="action-btn" style="display: none;" title="Zarządzaj słownikami i typami">[Ustawienia]</button>
+                <button id="btnRefreshData" class="action-btn" title="Pobierz najświeższe dane ze skryptu">[Odśwież]</button>
+                <button id="btnAdminLoginModal" class="action-btn" title="Wpisz hasło do synchronizacji">[Dostęp]</button>
 
-                <!-- Panel kolejki synchronizacji -->
-                <div id="syncQueuePanel" class="sync-queue-panel" style="display: none;">
-                    <div class="sync-queue-header">
-                        <h4>Synchronizacja w tle</h4>
-                        <span id="syncQueueCount" class="queue-count-badge">0 zadań</span>
-                    </div>
-                    <div id="syncQueueList" class="sync-queue-list">
-                        <p class="queue-empty-msg">Wszystkie dane są zsynchronizowane.</p>
+                <!-- Wskaźnik stanu synchronizacji i kolejki zadań w tle -->
+                <div id="syncStatusWrapper" class="sync-status-wrapper" style="display: none;">
+                    <button id="btnSyncStatus" class="sync-status-btn" title="Kolejka synchronizacji w chmurze">
+                        <img id="syncStatusImg" src="assets/sync.png" alt="Status synchronizacji" class="sync-icon-img">
+                    </button>
+                    <button id="btnLogoutAdmin" class="logout-btn" title="Wyloguj">[Wyloguj]</button>
+
+                    <!-- Panel kolejki synchronizacji -->
+                    <div id="syncQueuePanel" class="sync-queue-panel" style="display: none;">
+                        <div class="sync-queue-header">
+                            <h4>Synchronizacja w tle</h4>
+                            <span id="syncQueueCount" class="queue-count-badge">0 zadań</span>
+                        </div>
+                        <div id="syncQueueList" class="sync-queue-list">
+                            <p class="queue-empty-msg">Wszystkie dane są zsynchronizowane.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </header>
+
+    <!-- SZUFLADA MOBILNA (PO KLIKNIĘCIU W HAMBURGER) -->
+    <div id="mobileNavDrawer" class="mobile-nav-drawer" style="display: none;">
+        <div class="drawer-backdrop" id="mobileNavDrawerBackdrop"></div>
+        <div class="drawer-panel">
+            <div class="drawer-header">
+                <h3>Menu PocketPLUS</h3>
+                <button type="button" id="btnCloseMobileDrawer" class="drawer-close-btn">&times;</button>
+            </div>
+            
+            <div class="drawer-section">
+                <span class="drawer-label">Bazy danych</span>
+                <div class="mobile-profile-list">
+                    <button type="button" class="drawer-menu-item" data-drawer-nav="transactions">
+                        Transakcje
+                    </button>
+                    <button type="button" class="drawer-menu-item" data-drawer-nav="debts">
+                        Długi
+                    </button>
+                    <button type="button" class="drawer-menu-item" data-drawer-nav="subscriptions">
+                        Subskrypcje
+                    </button>
+                </div>
+            </div>
+
+            <div class="drawer-divider"></div>
+
+            <div class="drawer-section">
+                <span class="drawer-label">Opcje</span>
+                <button type="button" id="btnDrawerHome" class="drawer-menu-item">
+                    Start (Menu główne)
+                </button>
+                <button type="button" id="btnDrawerSettings" class="drawer-menu-item" style="display: none;">
+                    Ustawienia typów
+                </button>
+                <button type="button" id="btnDrawerAccess" class="drawer-menu-item">
+                    Dostęp (Hasło)
+                </button>
+                <button type="button" id="btnDrawerRefresh" class="drawer-menu-item">
+                    Odśwież dane
+                </button>
+                <button type="button" id="btnDrawerLogout" class="drawer-menu-item" style="display: none; color: #ff7b72;">
+                    Wyloguj
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- 1. EKRAN POWITALNY (STARTOWY) -->
     <main id="welcomeScreen" class="welcome-screen">
@@ -124,22 +179,9 @@
                     <!-- Kreska oddzielająca -->
                     <div class="stats-divider" id="statsDivider"></div>
 
-                    <!-- Dynamiczne stany na 3 kolejne miesiące (aktualny, -1, -2) -->
+                    <!-- Dynamiczne podsumowania miesięczne (rozwinięte kategorie) -->
                     <div class="stats-months-list" id="statsMonthsBlock">
-                        <span class="stats-kpi-label" style="margin-bottom: 2px;">Bilans miesięczny:</span>
-                        
-                        <div class="stats-month-item">
-                            <span id="statMonthLabel0" class="stats-month-name">Miesiąc 0</span>
-                            <span id="statMonthVal0" class="stats-month-amount">0.00 zł</span>
-                        </div>
-                        <div class="stats-month-item">
-                            <span id="statMonthLabel1" class="stats-month-name">Miesiąc -1</span>
-                            <span id="statMonthVal1" class="stats-month-amount">0.00 zł</span>
-                        </div>
-                        <div class="stats-month-item">
-                            <span id="statMonthLabel2" class="stats-month-name">Miesiąc -2</span>
-                            <span id="statMonthVal2" class="stats-month-amount">0.00 zł</span>
-                        </div>
+                        <!-- Generowane dynamicznie w JS: każdy miesiąc jako osobna kategoria z rozbiciem na typy transakcji -->
                     </div>
                 </div>
             </aside>
@@ -155,14 +197,17 @@
                             <input type="text" id="searchInput" class="search-input" placeholder="Szukaj po nazwie...">
                             <button id="btnClearSearch" class="clear-btn" style="display: none;">[x]</button>
                         </div>
-                        <div class="control-actions-inline">
-                            <div class="filter-type-wrapper" id="filterTypeWrapper">
+                        <button type="button" id="btnToggleFilters" class="btn-toggle-filters" title="Pokaż / ukryj filtry (Typ i Sortowanie)">
+                            &gt;
+                        </button>
+                        <div class="control-actions-inline is-collapsed" id="controlActionsInline">
+                            <div class="control-field-group" id="filterTypeWrapper">
                                 <label for="filterTypeSelect" class="control-field-label">Typ:</label>
                                 <select id="filterTypeSelect" class="form-select">
                                     <option value="all">Wszystkie typy</option>
                                 </select>
                             </div>
-                            <div class="sort-wrapper">
+                            <div class="control-field-group">
                                 <label for="sortSelect" class="control-field-label">Sortuj:</label>
                                 <select id="sortSelect" class="form-select">
                                     <option value="date_desc" selected>Data (Najnowsze)</option>
@@ -189,10 +234,10 @@
                     <table class="pocket-table" id="transactionsTable">
                         <thead id="pocketTableThead">
                             <tr>
-                                <th style="width: 60px;">ID</th>
+                                <th style="width: 50px;">ID</th>
                                 <th>Nazwa</th>
-                                <th style="width: 140px;">Typ</th>
-                                <th style="width: 150px; text-align: right;">Kwota</th>
+                                <th style="width: 130px;">Typ</th>
+                                <th style="width: 240px; text-align: right;">Kwota</th>
                                 <th style="width: 110px; text-align: center;">Data</th>
                                 <th style="width: 80px; text-align: center;">Akcje</th>
                             </tr>
@@ -205,29 +250,7 @@
                     <div id="emptyTableMessage" class="empty-state" style="display: none;">
                         <p>Brak danych do wyświetlenia dla podanych kryteriów.</p>
                     </div>
-                </div>
-
-                <!-- PASEK PAGINACJI -->
-                <div id="tablePaginationBar" class="shelves-pagination-bar">
-                    <button type="button" id="btnPagePrev" class="pagination-btn" title="Poprzednia strona" aria-label="Poprzednia strona">
-                        <svg class="pagination-arrow-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 12L10 5V9H20.2C20.48 9 20.62 9 20.727 9.0545C20.8211 9.10243 20.8976 9.17892 20.9455 9.273C21 9.37996 21 9.51997 21 9.8V14.2C21 14.48 21 14.62 20.9455 14.727C20.8976 14.8211 20.8211 14.8976 20.727 14.9455C20.62 15 20.48 15 20.2 15H10V19L3 12Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <div class="pagination-dropdown-wrapper" id="paginationDropdownWrapper">
-                        <button type="button" id="btnPageDropdown" class="pagination-page-trigger" aria-haspopup="listbox" aria-expanded="false">
-                            <span id="paginationCurrentText">Strona 1 z 1</span>
-                            <span class="pagination-dropdown-caret">▾</span>
-                        </button>
-                        <div id="paginationDropdownMenu" class="pagination-dropdown-menu" style="display: none;" role="listbox">
-                            <!-- Dynamiczne opcje stron -->
-                        </div>
-                    </div>
-                    <button type="button" id="btnPageNext" class="pagination-btn" title="Następna strona" aria-label="Następna strona">
-                        <svg class="pagination-arrow-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M21 12L14 5V9H3.8C3.51997 9 3.37996 9 3.273 9.0545C3.17892 9.10243 3.10243 9.17892 3.0545 9.273C3 9.37996 3 9.51997 3 9.8V14.2C3 14.48 3 14.62 3.0545 14.727C3.10243 14.8211 3.17892 14.8976 3.273 14.9455C3.37996 15 3.51997 15 3.8 15H14V19L21 12Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
+                    <div id="tableInfiniteEnd" class="infinite-scroll-end" style="display: none;"></div>
                 </div>
 
                 <!-- PRZYCISK DODAWANIA DLA TELEFONU (OTWIERA POP-UP EDYCJI / NOWEGO WPISU) -->
@@ -241,25 +264,15 @@
                 <section class="quick-add-panel" id="quickAddPanel">
                     <form id="quickAddForm" class="quick-add-form" autocomplete="off">
                         <div class="quick-add-grid">
-                            <div class="quick-field field-name">
-                                <label for="quickInputName" id="labelQuickName">Nazwa wpisu *</label>
-                                <input type="text" id="quickInputName" class="form-input" placeholder="np. Zakupy, Kawa, Bilet" required>
-                            </div>
-
                             <div class="quick-field field-person" id="fieldQuickPerson" style="display: none;">
                                 <label for="quickInputPerson">Osoba *</label>
                                 <input type="text" id="quickInputPerson" class="form-input" list="debtsPersonsDatalist" placeholder="np. Bartek, Natan">
                                 <datalist id="debtsPersonsDatalist"></datalist>
                             </div>
 
-                            <div class="quick-field field-loan-date" id="fieldQuickLoanDate" style="display: none;">
-                                <label for="quickInputLoanDate">Data pożyczki</label>
-                                <input type="date" id="quickInputLoanDate" class="form-input">
-                            </div>
-
-                            <div class="quick-field field-repay-date" id="fieldQuickRepayDate" style="display: none;">
-                                <label for="quickInputRepayDate">Data spłaty</label>
-                                <input type="date" id="quickInputRepayDate" class="form-input">
+                            <div class="quick-field field-name">
+                                <label for="quickInputName" id="labelQuickName">Nazwa *</label>
+                                <input type="text" id="quickInputName" class="form-input" placeholder="np. Zakupy, Kawa, Bilet" required>
                             </div>
 
                             <div class="quick-field field-type" id="fieldQuickType">
@@ -276,7 +289,7 @@
                             </div>
 
                             <div class="quick-field field-kind" id="fieldQuickKind">
-                                <label id="labelQuickKind">Charakter</label>
+                                <label id="labelQuickKind">Rodzaj transakcji</label>
                                 <div class="flow-toggle-group">
                                     <button type="button" class="btn-flow active flow-expense" id="btnKindExpense" data-kind="expense">Wydatek (-)</button>
                                     <button type="button" class="btn-flow flow-income" id="btnKindIncome" data-kind="income">Zysk (+)</button>
@@ -284,16 +297,26 @@
                             </div>
 
                             <div class="quick-field field-amount">
-                                <label for="quickInputAmount" id="labelQuickAmount">Koszt (zł) *</label>
+                                <label for="quickInputAmount" id="labelQuickAmount">Kwota *</label>
                                 <input type="number" id="quickInputAmount" class="form-input" step="0.01" min="0.01" placeholder="0.00" required>
                             </div>
 
                             <div class="quick-field field-savings" id="fieldQuickSavings">
-                                <label>Oszczędność (końcówka)</label>
-                                <label class="checkbox-savings-box" title="Zaokrąglenie w górę do pełnej złotówki - reszta trafia do oszczędności">
-                                    <input type="checkbox" id="quickCheckSavings">
-                                    <span id="quickSavingsLabelText">Dodaj resztę</span>
-                                </label>
+                                <label for="quickInputSavingsAmount" id="labelQuickSavings">Skarbonka</label>
+                                <div class="savings-input-group">
+                                    <input type="checkbox" id="quickCheckSavings" class="checkbox-savings-only" title="Zaznacz, aby dopełnić kwotę do pełnej złotówki">
+                                    <input type="number" id="quickInputSavingsAmount" class="form-input" step="0.01" min="0" placeholder="0.00" disabled style="width: 85px;">
+                                </div>
+                            </div>
+
+                            <div class="quick-field field-loan-date" id="fieldQuickLoanDate" style="display: none;">
+                                <label for="quickInputLoanDate">Data pożyczki</label>
+                                <input type="date" id="quickInputLoanDate" class="form-input">
+                            </div>
+
+                            <div class="quick-field field-repay-date" id="fieldQuickRepayDate" style="display: none;">
+                                <label for="quickInputRepayDate">Data spłaty</label>
+                                <input type="date" id="quickInputRepayDate" class="form-input">
                             </div>
 
                             <div class="quick-field field-submit">
@@ -334,7 +357,7 @@
     <div id="entryEditModal" class="modal-backdrop" style="display: none;">
         <div class="modal-window modal-entry-edit">
             <div class="modal-header">
-                <h2 id="entryEditModalTitle">Szczegóły wpisu</h2>
+                <h2 id="entryEditModalTitle">Edycja rekordu</h2>
             </div>
             <form id="entryEditForm">
                 <input type="hidden" id="editEntryId">
@@ -358,13 +381,25 @@
                             <option value="Dług u osoby">Dług u osoby</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="editEntryAmount" id="labelEditEntryAmount">Kwota (zł) *</label>
-                        <input type="number" id="editEntryAmount" class="form-input" step="0.01" required>
+                    <div class="form-group" id="groupEditKind">
+                        <label>Rodzaj transakcji</label>
+                        <div class="flow-toggle-group">
+                            <button type="button" class="btn-flow active flow-expense" id="btnModalKindExpense">Wydatek (-)</button>
+                            <button type="button" class="btn-flow flow-income" id="btnModalKindIncome">Zysk (+)</button>
+                        </div>
                     </div>
-                    <div class="form-group" id="groupEditSavings">
-                        <label for="editEntrySavings">Oszczędność (zł)</label>
-                        <input type="number" id="editEntrySavings" class="form-input" step="0.01" min="0">
+                    <div class="modal-amount-savings-row">
+                        <div class="form-group flex-1">
+                            <label for="editEntryAmount" id="labelEditEntryAmount">Kwota *</label>
+                            <input type="number" id="editEntryAmount" class="form-input" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="form-group" id="groupEditSavings" style="width: 140px;">
+                            <label for="editEntrySavings" id="labelEditEntrySavings">Skarbonka</label>
+                            <div class="savings-input-group">
+                                <input type="checkbox" id="modalCheckSavings" class="checkbox-savings-only" title="Zaznacz, aby dopełnić kwotę do pełnej złotówki">
+                                <input type="number" id="editEntrySavings" class="form-input" step="0.01" min="0" placeholder="0.00" disabled style="width: 100%;">
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="editEntryDate" id="labelEditEntryDate">Data</label>
@@ -376,11 +411,13 @@
                     </div>
                     <div id="entryEditError" class="form-error" style="display: none;"></div>
                 </div>
-                <div class="modal-footer" style="display: flex; justify-content: space-between;">
-                    <button type="button" id="btnDeleteCurrentEntry" class="btn-secondary" style="color: #ff7b72; border-color: rgba(239, 68, 68, 0.4);">Usuń wpis</button>
-                    <div style="display: flex; gap: 8px;">
+                <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <button type="button" id="btnDeleteCurrentEntry" class="btn-secondary" style="color: #ff7b72; border-color: rgba(239, 68, 68, 0.4);">Usuń wpis</button>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-left: auto;">
                         <button type="button" class="btn-secondary" data-close="entryEditModal">Anuluj</button>
-                        <button type="submit" id="btnSaveEntryChanges" class="btn-primary">Zapisz zmiany</button>
+                        <button type="submit" id="btnSaveEntryChanges" class="btn-primary">Dodaj rekord</button>
                     </div>
                 </div>
             </form>
@@ -394,8 +431,6 @@
                 <h2>Ustawienia: type (set and stat)</h2>
             </div>
             <div class="modal-body">
-                <p class="modal-hint">Zarządzaj dostępnymi typami transakcji w bazie danych.</p>
-                
                 <div class="add-type-inline-form">
                     <input type="text" id="newTypeNameInput" class="form-input" placeholder="Wpisz nowy typ (np. Zdrowie, Samochód)">
                     <button type="button" id="btnAddNewType" class="btn-primary" style="white-space: nowrap;">[+] Dodaj typ</button>
@@ -412,10 +447,28 @@
         </div>
     </div>
 
+    <!-- MODAL 4: POTWIERDZENIE USUNIĘCIA (TRANSAKCJA, DŁUG, SUBSKRYPCJA, TYP) -->
+    <div id="confirmDeleteModal" class="modal-backdrop" style="display: none; z-index: 1200;">
+        <div class="modal-window modal-small">
+            <div class="modal-header">
+                <h2 id="confirmDeleteModalTitle">Potwierdzenie usunięcia</h2>
+            </div>
+            <div class="modal-body">
+                <p id="confirmDeleteModalMessage" style="color: var(--color-text-main); font-size: 14px; line-height: 1.5; margin: 0 0 10px 0;">
+                    Czy na pewno chcesz usunąć ten element? Tej operacji nie można cofnąć.
+                </p>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-secondary" id="btnCancelConfirmDelete">Anuluj</button>
+                <button type="button" class="btn-primary" id="btnAcceptConfirmDelete" style="background-color: rgba(229, 83, 83, 0.85); border-color: #e55353; color: #fff;">Usuń</button>
+            </div>
+        </div>
+    </div>
+
     <!-- STOPKA -->
     <footer class="app-footer" id="appFooter">
         <div class="footer-content">
-            <span>&copy; PocketPLUS | wersja 1.0.1</span>
+            <span>&copy; PocketPLUS | wersja 1.1</span>
         </div>
     </footer>
 

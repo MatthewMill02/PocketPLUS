@@ -1,11 +1,12 @@
-/* Pulpit transakcji PocketPLUS - Czysty, nowoczesny układ 2-kolumnowy */
+/* Pulpit transakcji PocketPLUS - Nowoczesny układ z wyśrodkowaną kolumną danych */
 .dashboard-screen {
     flex: 1;
-    max-width: 1540px;
     width: 100%;
-    margin: 0 auto;
-    padding: 10px 14px 30px;
+    margin: 0;
+    padding: 10px 14px 0 14px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
 /* 3 DUŻE WYŚRODKOWANE PRZYCISKI DO PRZEŁĄCZANIA PODSTRON */
@@ -14,9 +15,10 @@
     justify-content: center;
     align-items: center;
     gap: 16px;
-    margin: 6px auto 18px auto;
+    margin: 4px auto 14px auto;
     max-width: 600px;
     width: 100%;
+    flex-shrink: 0;
 }
 
 .btn-subpage {
@@ -50,24 +52,45 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* Główny kontener układu: relatywny, żeby lewa kolumna mogła stać po lewej stronie tabeli */
 .dashboard-main-layout {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    width: 100%;
     position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex: 1;
+    min-height: 0;
 }
 
-/* WĄSKA LEWA KOLUMNA: STATYSTYKI (Przyklejona do ekranu / podążająca za scrollem) */
+/* WĄSKA LEWA KOLUMNA: STATYSTYKI
+   Po lewej stronie od wyśrodkowanej kolumny danych (dashboard-main-column).
+   Pozycja absolutna z wyliczeniem lewej krawędzi lub sticky. */
 .dashboard-stats-sidebar {
+    position: absolute;
+    right: calc(50% + 540px + 20px);
+    top: 0;
     width: 270px;
     flex-shrink: 0;
-    position: sticky;
-    top: calc(var(--header-height) + 10px);
     display: flex;
     flex-direction: column;
     gap: 12px;
     z-index: 10;
+}
+
+/* Jeśli ekran jest węższy niż kolumna + sidebar z zapasem (ok. 1650px),
+   sidebar przechodzi w elastyczną lewą pozycję z marginesem */
+@media (max-width: 1680px) {
+    .dashboard-stats-sidebar {
+        position: sticky;
+        top: 0;
+        right: auto;
+        left: 0;
+        margin-right: 18px;
+    }
+    .dashboard-main-layout {
+        justify-content: center;
+    }
 }
 
 .stats-card-panel {
@@ -144,43 +167,112 @@
 .stats-months-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
-.stats-month-item {
+.stats-month-category {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background-color: rgba(17, 20, 24, 0.5);
+    border: 1px solid rgba(38, 45, 55, 0.6);
+}
+
+.stats-month-cat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(38, 45, 55, 0.4);
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+}
+
+.stats-month-cat-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    text-transform: capitalize;
+}
+
+.stats-month-cat-total {
+    font-family: monospace, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.stats-month-subitems {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stats-month-subrow {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 14px;
-    padding: 6px 8px;
+    padding: 2px 4px;
     border-radius: var(--radius-sm);
-    background-color: rgba(17, 20, 24, 0.4);
-    border: 1px solid rgba(38, 45, 55, 0.5);
 }
 
-.stats-month-name {
+.stats-month-subrow:hover {
+    background-color: rgba(26, 30, 36, 0.5);
+}
+
+.stats-month-sublabel {
     color: var(--color-text-muted);
-    font-weight: 500;
-    text-transform: capitalize;
 }
 
-.stats-month-amount {
+.stats-month-subval {
     font-family: monospace, sans-serif;
-    font-weight: 700;
+    font-weight: 600;
 }
 
-/* SZEROKA PRAWA KOLUMNA: TABELA, WYSZUKIWARKA, FORMULARZ */
+/* Wskaźnik braku wpisów w danym miesiącu */
+.stats-month-empty {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    font-style: italic;
+    padding: 2px 4px;
+}
+
+/* GŁÓWNA KOLUMNA Z DANYMI (TABELA, WYSZUKIWARKA, FORMULARZ)
+   Wyśrodkowana względem strony (max-width: 1080px, width: 100%) */
 .dashboard-main-column {
-    flex: 1;
+    width: 100%;
+    max-width: 1080px;
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 0;
+    position: relative;
+    padding-bottom: 24px;
+}
+
+/* Wskaźnik zakończenia wczytywania wszystkich rekordów */
+.infinite-scroll-end {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 14px;
+    margin-top: 4px;
+    border-radius: var(--radius-sm);
+    background-color: rgba(17, 20, 24, 0.4);
+    border: 1px dashed var(--color-border);
+}
+
+.infinite-scroll-text {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    font-weight: 500;
 }
 
 /* PASEK KONTROLEK: WYSZUKIWARKA, FILTR I SORTOWANIE */
 .dashboard-controls {
     margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
 .search-sort-bar {
@@ -255,24 +347,53 @@
     color: var(--color-text-main);
 }
 
+.btn-toggle-filters {
+    height: 38px;
+    width: 38px;
+    background-color: rgba(17, 20, 24, 0.8);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-main);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.btn-toggle-filters:hover {
+    background-color: var(--color-surface-hover);
+    border-color: #3b5982;
+}
+
 .control-actions-inline {
     display: flex;
     gap: 12px;
-    align-items: center;
+    align-items: flex-end;
     flex-wrap: wrap;
+    transition: max-height 0.2s ease, opacity 0.2s ease;
 }
 
-.filter-type-wrapper,
-.sort-wrapper {
+.control-actions-inline.is-collapsed {
+    display: none !important;
+}
+
+.control-field-group {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
 }
 
 .control-field-label {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--color-text-muted);
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
 }
 
 .search-sort-bar .form-select {
@@ -311,10 +432,15 @@
 @media (max-width: 900px) {
     .dashboard-main-layout {
         flex-direction: column;
+        align-items: center;
+    }
+    .dashboard-main-column {
+        padding-bottom: 20px; /* Na telefonie brak fixed panelu, używany jest pop-up */
     }
     .mobile-stats-toggle-btn {
         display: flex;
         width: 100%;
+        max-width: 1080px;
     }
     .dashboard-stats-sidebar {
         position: fixed;
@@ -342,5 +468,41 @@
     }
     .mobile-sidebar-backdrop.active {
         display: block;
+    }
+
+    .subpage-nav-bar {
+        display: none !important;
+    }
+
+    .search-sort-bar {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .search-wrapper {
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .control-actions-inline {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .control-field-group {
+        width: 100%;
+    }
+
+    .control-field-group select {
+        width: 100%;
+        height: 36px;
+        font-size: 13px;
+    }
+
+    .dashboard-main-column {
+        width: 100%;
+        max-width: 100%;
     }
 }

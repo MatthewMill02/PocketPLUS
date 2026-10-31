@@ -69,10 +69,12 @@ const state = {
         type: "all",
         sort: "date_desc"
     },
-    pagination: {
-        currentPage: 1,
-        itemsPerPage: 10,
-        totalPages: 1
+    // Dynamiczne ładowanie rekordów (Infinite Scroll)
+    infiniteScroll: {
+        batchSize: 30,
+        renderedCount: 30,
+        isLoadingMore: false,
+        allLoaded: false
     }
 };
 

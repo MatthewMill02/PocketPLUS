@@ -51,8 +51,10 @@ function openDashboardScreen(dbId = "transactions") {
     populateTypeDropdowns();
     populatePersonDatalist();
 
-    // Reset paginacji i renderowanie
-    state.pagination.currentPage = 1;
+    // Reset licznika dynamicznego ładowania i renderowanie
+    state.infiniteScroll.renderedCount = state.infiniteScroll.batchSize;
+    state.infiniteScroll.allLoaded = false;
+    state.infiniteScroll.isLoadingMore = false;
     renderTransactionsTable();
     updateDashboardStats();
 
@@ -92,6 +94,32 @@ function formatDateDisplay(rawDate) {
     return rawDate;
 }
 
+// Konwersja daty do formatu akceptowanego przez <input type="date"> (YYYY-MM-DD)
+function formatDateToInput(rawDate) {
+    if (!rawDate) return "";
+    const str = String(rawDate).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return str;
+    }
+    // Jeśli format to DD.MM.YYYY
+    if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(str)) {
+        const parts = str.split(".");
+        const day = parts[0].padStart(2, "0");
+        const month = parts[1].padStart(2, "0");
+        const year = parts[2];
+        return `${year}-${month}-${day}`;
+    }
+    // Próba przez obiekt Date
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+    return "";
+}
+
 // Konfiguracja formularza dodawania pod bazę
 function configureQuickAddFormForDb(dbId) {
     const fieldPerson = document.getElementById("fieldQuickPerson");
@@ -117,7 +145,7 @@ function configureQuickAddFormForDb(dbId) {
         if (fieldKind) fieldKind.style.display = "flex";
         if (filterTypeWrapper) filterTypeWrapper.style.display = "none";
 
-        if (labelQuickName) labelQuickName.textContent = "Za co / Tytuł *";
+        if (labelQuickName) labelQuickName.textContent = "Nazwa *";
         if (labelQuickAmount) labelQuickAmount.textContent = "Kwota długu (zł) *";
         if (labelQuickKind) labelQuickKind.textContent = "Rodzaj długu";
 
@@ -139,8 +167,8 @@ function configureQuickAddFormForDb(dbId) {
         if (fieldKind) fieldKind.style.display = "none";
         if (filterTypeWrapper) filterTypeWrapper.style.display = "flex";
 
-        if (labelQuickName) labelQuickName.textContent = "Nazwa usługi *";
-        if (labelQuickAmount) labelQuickAmount.textContent = "Koszt cykliczny (zł) *";
+        if (labelQuickName) labelQuickName.textContent = "Nazwa *";
+        if (labelQuickAmount) labelQuickAmount.textContent = "Koszt *";
         state.quickKind = "expense";
     } else {
         if (fieldPerson) fieldPerson.style.display = "none";
@@ -151,9 +179,11 @@ function configureQuickAddFormForDb(dbId) {
         if (fieldKind) fieldKind.style.display = "flex";
         if (filterTypeWrapper) filterTypeWrapper.style.display = "flex";
 
-        if (labelQuickName) labelQuickName.textContent = "Nazwa transakcji *";
-        if (labelQuickAmount) labelQuickAmount.textContent = "Koszt (zł) *";
-        if (labelQuickKind) labelQuickKind.textContent = "Charakter";
+        if (labelQuickName) labelQuickName.textContent = "Nazwa *";
+        if (labelQuickAmount) labelQuickAmount.textContent = "Kwota *";
+        const labelQuickSavings = document.getElementById("labelQuickSavings");
+        if (labelQuickSavings) labelQuickSavings.textContent = "Skarbonka";
+        if (labelQuickKind) labelQuickKind.textContent = "Rodzaj transakcji";
 
         if (btnKindExpense) {
             btnKindExpense.textContent = "Wydatek (-)";
@@ -335,13 +365,6 @@ function updateDashboardStats() {
     const bufferElem = document.getElementById("statFinancialBuffer");
     const scopeBadge = document.getElementById("statsScopeBadge");
 
-    const monthLabel0 = document.getElementById("statMonthLabel0");
-    const monthVal0 = document.getElementById("statMonthVal0");
-    const monthLabel1 = document.getElementById("statMonthLabel1");
-    const monthVal1 = document.getElementById("statMonthVal1");
-    const monthLabel2 = document.getElementById("statMonthLabel2");
-    const monthVal2 = document.getElementById("statMonthVal2");
-
     if (!balanceElem || !bufferElem) return;
 
     if (scopeBadge) {
@@ -350,12 +373,11 @@ function updateDashboardStats() {
 
     const statsDivider = document.getElementById("statsDivider");
     const statsMonthsBlock = document.getElementById("statsMonthsBlock");
+    const kpiBlock1 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(2)");
+    if (kpiBlock1) kpiBlock1.style.display = "flex";
 
     if (state.currentDb === "debts") {
         // Dla długów:
-        // W bocznej kolumnie mają być 2 kategorie:
-        // 1. Osoby dłużne u mnie (debt_type === "Dług u mnie" i brak repayment_date)
-        // 2. Te u których dłużny jestem ja (debt_type === "Dług u osoby" i brak repayment_date)
         let unpaidToMe = 0;
         let unpaidToOthers = 0;
 
@@ -383,13 +405,177 @@ function updateDashboardStats() {
         const label2 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(3) .stats-kpi-label");
         if (label2) label2.textContent = "Moje długi (niespłacone)";
 
-        // Ukrywamy miesiące, ponieważ dotyczą transakcji
-        if (statsDivider) statsDivider.style.display = "none";
-        if (statsMonthsBlock) statsMonthsBlock.style.display = "none";
+        if (statsDivider) statsDivider.style.display = "block";
+        if (statsMonthsBlock) {
+            statsMonthsBlock.style.display = "flex";
+            statsMonthsBlock.innerHTML = "";
+
+            // Agregacja osób z niepozamykanymi sprawami
+            const personsToMe = {};
+            const personsToOthers = {};
+
+            state.debts.forEach(d => {
+                const isRepaid = d.repayment_date && String(d.repayment_date).trim() !== "" && String(d.repayment_date).trim() !== "-";
+                if (!isRepaid) {
+                    const person = (d.person && d.person.trim()) ? d.person.trim() : "Nieokreślona osoba";
+                    const amt = parseFloat(d.amount) || 0;
+                    if (d.debt_type === "Dług u mnie") {
+                        personsToMe[person] = (personsToMe[person] || 0) + amt;
+                    } else {
+                        personsToOthers[person] = (personsToOthers[person] || 0) + amt;
+                    }
+                }
+            });
+
+            // Kategoria 1: Długi u mnie (ktoś mi wisi)
+            const cardToMe = document.createElement("div");
+            cardToMe.className = "stats-month-category";
+            const personsToMeKeys = Object.keys(personsToMe);
+            let subitemsToMeHtml = "";
+
+            if (personsToMeKeys.length === 0) {
+                subitemsToMeHtml = `<div class="stats-month-empty">Wszystkie sprawy spłacone</div>`;
+            } else {
+                personsToMeKeys.sort().forEach(personName => {
+                    const amt = personsToMe[personName];
+                    subitemsToMeHtml += `
+                        <div class="stats-month-subrow">
+                            <span class="stats-month-sublabel">${escapeHtml(personName)}</span>
+                            <span class="stats-month-subval" style="color: #56d364;">+${amt.toFixed(2)} zł</span>
+                        </div>
+                    `;
+                });
+            }
+
+            cardToMe.innerHTML = `
+                <div class="stats-month-cat-header">
+                    <span class="stats-month-cat-title">Długi u mnie</span>
+                    <span class="stats-month-cat-total" style="color: #56d364;">+${unpaidToMe.toFixed(2)} zł</span>
+                </div>
+                <div class="stats-month-subitems">
+                    ${subitemsToMeHtml}
+                </div>
+            `;
+            statsMonthsBlock.appendChild(cardToMe);
+
+            // Kategoria 2: Długi u osoby (ja komuś wiszę)
+            const cardToOthers = document.createElement("div");
+            cardToOthers.className = "stats-month-category";
+            const personsToOthersKeys = Object.keys(personsToOthers);
+            let subitemsToOthersHtml = "";
+
+            if (personsToOthersKeys.length === 0) {
+                subitemsToOthersHtml = `<div class="stats-month-empty">Wszystkie sprawy spłacone</div>`;
+            } else {
+                personsToOthersKeys.sort().forEach(personName => {
+                    const amt = personsToOthers[personName];
+                    subitemsToOthersHtml += `
+                        <div class="stats-month-subrow">
+                            <span class="stats-month-sublabel">${escapeHtml(personName)}</span>
+                            <span class="stats-month-subval" style="color: #ff7b72;">-${amt.toFixed(2)} zł</span>
+                        </div>
+                    `;
+                });
+            }
+
+            cardToOthers.innerHTML = `
+                <div class="stats-month-cat-header">
+                    <span class="stats-month-cat-title">Długi u osoby</span>
+                    <span class="stats-month-cat-total" style="color: #ff7b72;">-${unpaidToOthers.toFixed(2)} zł</span>
+                </div>
+                <div class="stats-month-subitems">
+                    ${subitemsToOthersHtml}
+                </div>
+            `;
+            statsMonthsBlock.appendChild(cardToOthers);
+        }
         return;
     }
 
-    // Reset wyświetlania dla transakcji i subskrypcji
+    if (state.currentDb === "subscriptions") {
+        // Łączny koszt poniesiony w transakcjach na wszystkie subskrypcje
+        let totalSpentOnAllSubs = 0;
+        const subOccurrences = {}; // nazwa -> { count, totalSpent }
+
+        state.subscriptions.forEach(s => {
+            const subName = (s.name || "").trim().toLowerCase();
+            subOccurrences[subName] = {
+                displayName: s.name || "Usługa",
+                count: 0,
+                totalSpent: 0
+            };
+        });
+
+        // Przeliczenie w bazie transakcji
+        state.transactions.forEach(t => {
+            const tName = (t.name || "").trim().toLowerCase();
+            const tAmt = Math.abs(parseFloat(t.amount) || 0);
+
+            // Sprawdzamy czy transakcja odpowiada którejś z subskrypcji
+            Object.keys(subOccurrences).forEach(subKey => {
+                if (tName === subKey || tName.includes(subKey) || subKey.includes(tName)) {
+                    subOccurrences[subKey].count += 1;
+                    subOccurrences[subKey].totalSpent += tAmt;
+                    totalSpentOnAllSubs += tAmt;
+                }
+            });
+        });
+
+        const kpiBlock1 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(2)");
+        const label2 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(3) .stats-kpi-label");
+        
+        // Ukrywamy klocek 'Koszty cykliczne' zgodnie z prośbą
+        if (kpiBlock1) kpiBlock1.style.display = "none";
+        if (label2) label2.textContent = "Łącznie wydane";
+
+        bufferElem.textContent = "-" + totalSpentOnAllSubs.toFixed(2) + " zł";
+        bufferElem.className = "stats-kpi-val negative";
+
+        if (statsDivider) statsDivider.style.display = "block";
+        if (statsMonthsBlock) {
+            statsMonthsBlock.style.display = "flex";
+            statsMonthsBlock.innerHTML = "";
+
+            const card = document.createElement("div");
+            card.className = "stats-month-category";
+
+            const keys = Object.keys(subOccurrences);
+            let subitemsHtml = "";
+
+            if (keys.length === 0) {
+                subitemsHtml = `<div class="stats-month-empty">Brak zdefiniowanych usług</div>`;
+            } else {
+                keys.forEach(k => {
+                    const item = subOccurrences[k];
+                    subitemsHtml += `
+                        <div class="stats-month-subrow" style="flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 4px; border-bottom: 1px solid rgba(38, 45, 55, 0.3);">
+                            <div style="display: flex; justify-content: space-between; width: 100%;">
+                                <span class="stats-month-sublabel" style="font-weight: 600; color: var(--color-text-main);">${escapeHtml(item.displayName)}</span>
+                                <span class="stats-month-subval" style="color: #ff7b72;">-${item.totalSpent.toFixed(2)} zł</span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--color-text-muted);">
+                                Transakcje: <strong style="color: var(--color-text-main);">${item.count}</strong> ${item.count === 1 ? "raz" : "razy"}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            card.innerHTML = `
+                <div class="stats-month-cat-header">
+                    <span class="stats-month-cat-title">Rozpiska usług</span>
+                    <span class="stats-month-cat-total" style="color: #ff7b72;">-${totalSpentOnAllSubs.toFixed(2)} zł</span>
+                </div>
+                <div class="stats-month-subitems">
+                    ${subitemsHtml}
+                </div>
+            `;
+            statsMonthsBlock.appendChild(card);
+        }
+        return;
+    }
+
+    // Reset wyświetlania dla transakcji
     if (statsDivider) statsDivider.style.display = "block";
     if (statsMonthsBlock) statsMonthsBlock.style.display = "flex";
 
@@ -400,21 +586,16 @@ function updateDashboardStats() {
 
     // 1. Stan konta: suma wszystkich transakcji
     let totalBalance = 0;
-    // 2. Poduszka finansowa: suma transakcji o typie "Oszczędności" + kwoty z pola savings
+    // 2. Poduszka finansowa: suma transakcji o typie "Oszczędności"
     let financialBuffer = 0;
 
     const list = state.transactions;
     list.forEach(t => {
         const amt = parseFloat(t.amount) || 0;
-        const sav = parseFloat(t.savings) || 0;
-
         totalBalance += amt;
 
         if ((t.type || "").toLowerCase() === "oszczędności") {
             financialBuffer += Math.abs(amt);
-        }
-        if (sav > 0) {
-            financialBuffer += sav;
         }
     });
 
@@ -423,28 +604,64 @@ function updateDashboardStats() {
 
     bufferElem.textContent = financialBuffer.toFixed(2) + " zł";
 
-    // 3. Stany na 3 kolejne miesiące (bieżący M0, M-1, M-2)
-    const now = new Date();
-    const monthsData = [
-        getMonthlyStats(list, now.getFullYear(), now.getMonth()),
-        getMonthlyStats(list, getRelativeYear(now, -1), getRelativeMonth(now, -1)),
-        getMonthlyStats(list, getRelativeYear(now, -2), getRelativeMonth(now, -2))
-    ];
+    // 3. Stany na 3 kolejne miesiące (bieżący M0, M-1, M-2) - rozwinięte na kategorie
+    if (statsMonthsBlock) {
+        statsMonthsBlock.innerHTML = "";
 
-    if (monthLabel0 && monthVal0) {
-        monthLabel0.textContent = monthsData[0].name;
-        monthVal0.textContent = (monthsData[0].total >= 0 ? "+" : "") + monthsData[0].total.toFixed(2) + " zł";
-        monthVal0.style.color = monthsData[0].total >= 0 ? "#56d364" : "#ff7b72";
-    }
-    if (monthLabel1 && monthVal1) {
-        monthLabel1.textContent = monthsData[1].name;
-        monthVal1.textContent = (monthsData[1].total >= 0 ? "+" : "") + monthsData[1].total.toFixed(2) + " zł";
-        monthVal1.style.color = monthsData[1].total >= 0 ? "#56d364" : "#ff7b72";
-    }
-    if (monthLabel2 && monthVal2) {
-        monthLabel2.textContent = monthsData[2].name;
-        monthVal2.textContent = (monthsData[2].total >= 0 ? "+" : "") + monthsData[2].total.toFixed(2) + " zł";
-        monthVal2.style.color = monthsData[2].total >= 0 ? "#56d364" : "#ff7b72";
+        const now = new Date();
+        const monthsData = [
+            getMonthlyStats(list, now.getFullYear(), now.getMonth()),
+            getMonthlyStats(list, getRelativeYear(now, -1), getRelativeMonth(now, -1)),
+            getMonthlyStats(list, getRelativeYear(now, -2), getRelativeMonth(now, -2))
+        ];
+
+        monthsData.forEach(m => {
+            const card = document.createElement("div");
+            card.className = "stats-month-category";
+
+            const sign = m.total >= 0 ? "+" : "";
+            const totalColor = m.total >= 0 ? "#56d364" : "#ff7b72";
+
+            let subitemsHtml = "";
+            const typesKeys = Object.keys(m.byType);
+
+            if (typesKeys.length === 0 && m.piggyBank === 0) {
+                subitemsHtml = `<div class="stats-month-empty">Brak transakcji w tym miesiącu</div>`;
+            } else {
+                typesKeys.forEach(typeName => {
+                    const amt = m.byType[typeName];
+                    const subSign = amt >= 0 ? "+" : "";
+                    const subColor = amt >= 0 ? "#56d364" : "#ff7b72";
+                    subitemsHtml += `
+                        <div class="stats-month-subrow">
+                            <span class="stats-month-sublabel">${escapeHtml(typeName)}</span>
+                            <span class="stats-month-subval" style="color: ${subColor};">${subSign}${amt.toFixed(2)} zł</span>
+                        </div>
+                    `;
+                });
+
+                if (m.piggyBank > 0) {
+                    subitemsHtml += `
+                        <div class="stats-month-subrow" style="border-top: 1px dashed rgba(88, 166, 255, 0.25); padding-top: 4px; margin-top: 2px;">
+                            <span class="stats-month-sublabel" style="color: #58a6ff; font-weight: 500;">Skarbonka</span>
+                            <span class="stats-month-subval" style="color: #58a6ff;">+${m.piggyBank.toFixed(2)} zł</span>
+                        </div>
+                    `;
+                }
+            }
+
+            card.innerHTML = `
+                <div class="stats-month-cat-header">
+                    <span class="stats-month-cat-title">${escapeHtml(m.name)}</span>
+                    <span class="stats-month-cat-total" style="color: ${totalColor};">${sign}${m.total.toFixed(2)} zł</span>
+                </div>
+                <div class="stats-month-subitems">
+                    ${subitemsHtml}
+                </div>
+            `;
+
+            statsMonthsBlock.appendChild(card);
+        });
     }
 }
 
@@ -464,17 +681,33 @@ function getMonthlyStats(transactions, year, month) {
         "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"
     ];
     let total = 0;
+    let piggyBank = 0;
+    const byType = {};
+
     transactions.forEach(t => {
         if (!t.date) return;
         const d = new Date(t.date);
         if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month) {
-            total += parseFloat(t.amount) || 0;
+            const amt = parseFloat(t.amount) || 0;
+            const sav = parseFloat(t.savings) || 0;
+            total += amt;
+            if (sav > 0) {
+                piggyBank += sav;
+            }
+
+            const typeKey = t.type ? t.type.trim() : "Bez kategorii";
+            if (!byType[typeKey]) {
+                byType[typeKey] = 0;
+            }
+            byType[typeKey] += amt;
         }
     });
 
     return {
         name: `${monthNames[month]} ${year}`,
-        total: total
+        total: total,
+        piggyBank: piggyBank,
+        byType: byType
     };
 }
 
@@ -487,12 +720,12 @@ function renderTableHeader() {
             <tr>
                 <th style="width: 50px;">ID</th>
                 <th style="width: 130px;">Osoba</th>
-                <th>Za co</th>
+                <th>Nazwa</th>
                 <th style="width: 140px;">Typ długu</th>
                 <th style="width: 120px; text-align: right;">Kwota</th>
                 <th style="width: 110px; text-align: center;">Data</th>
                 <th style="width: 110px; text-align: center;">Spłata</th>
-                <th style="width: 80px; text-align: center;">Akcje</th>
+                <th style="width: 70px; text-align: center;">Akcje</th>
             </tr>
         `;
     } else if (state.currentDb === "subscriptions") {
@@ -501,19 +734,19 @@ function renderTableHeader() {
                 <th style="width: 50px;">ID</th>
                 <th>Usługa</th>
                 <th style="width: 130px;">Kategoria</th>
-                <th style="width: 140px; text-align: right;">Koszt cyklu</th>
+                <th style="width: 140px; text-align: right;">Koszt</th>
                 <th style="width: 110px; text-align: center;">Pierwsza opłata</th>
                 <th style="width: 110px; text-align: center;">Ostatnia opłata</th>
-                <th style="width: 80px; text-align: center;">Akcje</th>
+                <th style="width: 70px; text-align: center;">Akcje</th>
             </tr>
         `;
     } else {
         thead.innerHTML = `
             <tr>
-                <th style="width: 60px;">ID</th>
+                <th style="width: 50px;">ID</th>
                 <th>Nazwa</th>
-                <th style="width: 140px;">Typ</th>
-                <th style="width: 170px; text-align: right;">Kwota</th>
+                <th style="width: 130px;">Typ</th>
+                <th style="width: 240px; text-align: right;">Kwota</th>
                 <th style="width: 110px; text-align: center;">Data</th>
                 <th style="width: 80px; text-align: center;">Akcje</th>
             </tr>
@@ -544,15 +777,22 @@ function renderTransactionsTable() {
         items = items.filter(t => t.type === state.filters.type);
     }
 
-    // Sortowanie
+    // Sortowanie (przy równej dacie drugorzędnym kryterium jest ID malejące)
     items.sort((a, b) => {
         const dateA = a.date || a.loan_date || a.first_payment || "";
         const dateB = b.date || b.loan_date || b.first_payment || "";
+        const idA = Number(a.id) || 0;
+        const idB = Number(b.id) || 0;
+
         switch (state.filters.sort) {
-            case "date_asc":
-                return new Date(dateA) - new Date(dateB);
-            case "date_desc":
-                return new Date(dateB) - new Date(dateA);
+            case "date_asc": {
+                const diff = new Date(dateA) - new Date(dateB);
+                return diff !== 0 ? diff : (idA - idB);
+            }
+            case "date_desc": {
+                const diff = new Date(dateB) - new Date(dateA);
+                return diff !== 0 ? diff : (idB - idA); // Drugorzędne sortowanie po ID malejąco
+            }
             case "amount_asc":
                 return (a.amount || 0) - (b.amount || 0);
             case "amount_desc":
@@ -560,18 +800,20 @@ function renderTransactionsTable() {
             case "name_asc":
                 return (a.name || "").localeCompare(b.name || "");
             default:
-                return (b.id || 0) - (a.id || 0);
+                return idB - idA;
         }
     });
 
     const totalItems = items.length;
-    state.pagination.totalPages = Math.max(1, Math.ceil(totalItems / state.pagination.itemsPerPage));
-    if (state.pagination.currentPage > state.pagination.totalPages) {
-        state.pagination.currentPage = state.pagination.totalPages;
+    const endElem = document.getElementById("tableInfiniteEnd");
+    if (state.infiniteScroll.renderedCount >= totalItems) {
+        state.infiniteScroll.allLoaded = true;
+    } else {
+        state.infiniteScroll.allLoaded = false;
     }
+    if (endElem) endElem.style.display = "none";
 
-    const startIdx = (state.pagination.currentPage - 1) * state.pagination.itemsPerPage;
-    const pageItems = items.slice(startIdx, startIdx + state.pagination.itemsPerPage);
+    const pageItems = items.slice(0, state.infiniteScroll.renderedCount);
 
     tbody.innerHTML = "";
 
@@ -584,35 +826,62 @@ function renderTransactionsTable() {
             const tr = document.createElement("tr");
 
             if (state.currentDb === "debts") {
-                const isToMe = t.debt_type === "Dług u mnie";
-                const rowClass = isToMe ? "row-income" : "row-expense";
-                const amountClass = isToMe ? "amount-income" : "amount-expense";
-                const repaymentText = t.repayment_date ? formatDateDisplay(t.repayment_date) : "<span style='color:var(--color-text-muted);'>Niespłacony</span>";
+                const isSettled = !!(t.repayment_date && String(t.repayment_date).trim() !== "");
+                const isToMe = (t.debt_type || "").trim() === "Dług u mnie"; // ktoś wisi mnie (w drugą stronę -> zysk -> zielony)
+                
+                let rowClass = "";
+                let amountClass = "";
+                if (isSettled) {
+                    rowClass = "";
+                    amountClass = "amount-neutral";
+                } else if (isToMe) {
+                    // Dług u mnie (ktoś mi wisi) -> zielony
+                    rowClass = "row-income";
+                    amountClass = "amount-income";
+                } else {
+                    // Dług u osoby / po mojej stronie (ja komuś wiszę) -> czerwony
+                    rowClass = "row-expense";
+                    amountClass = "amount-expense";
+                }
+
+                const repaymentText = isSettled ? formatDateDisplay(t.repayment_date) : "<span style='color:var(--color-text-muted);'>Niespłacony</span>";
 
                 tr.className = rowClass;
                 tr.innerHTML = `
-                    <td>${t.id}</td>
-                    <td style="font-weight: 600;">${escapeHtml(t.person || "")}</td>
-                    <td>${escapeHtml(t.name || "")}</td>
-                    <td><span class="type-badge">${escapeHtml(t.debt_type || "")}</span></td>
-                    <td style="text-align: right;" class="amount-cell ${amountClass}">${Number(t.amount || 0).toFixed(2)} zł</td>
-                    <td style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.loan_date)}</td>
-                    <td style="text-align: center; font-size: 14px;">${repaymentText}</td>
-                    <td style="text-align: center;">
-                        <button type="button" class="btn-row-action" title="Szczegóły / Edytuj" data-id="${t.id}">Edytuj</button>
+                    <td class="td-id">${t.id}</td>
+                    <td class="td-person" style="font-weight: 600;">${escapeHtml(t.person || "")}</td>
+                    <td class="td-name" style="font-weight: 500;">${escapeHtml(t.name || "")}</td>
+                    <td class="td-type"><span class="type-badge">${escapeHtml(t.debt_type || "")}</span></td>
+                    <td class="td-amount" style="text-align: right;"><span class="amount-cell ${amountClass}">${Number(t.amount || 0).toFixed(2)} zł</span></td>
+                    <td class="td-date" style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.loan_date)}</td>
+                    <td class="td-repayment" style="text-align: center; font-size: 14px;">${repaymentText}</td>
+                    <td class="td-actions" style="text-align: center; white-space: nowrap;">
+                        <div class="row-actions-dropdown">
+                            <button type="button" class="btn-row-more" title="Więcej akcji">•••</button>
+                            <div class="row-actions-menu" style="display: none;">
+                                <button type="button" class="row-action-item action-edit">Edytuj</button>
+                                <button type="button" class="row-action-item action-save-trans">Zapisz transakcję</button>
+                            </div>
+                        </div>
                     </td>
                 `;
             } else if (state.currentDb === "subscriptions") {
                 tr.className = "row-expense";
                 tr.innerHTML = `
-                    <td>${t.id}</td>
-                    <td style="font-weight: 600;">${escapeHtml(t.name || "")}</td>
-                    <td><span class="type-badge">${escapeHtml(t.type || "Codzienny")}</span></td>
-                    <td style="text-align: right;" class="amount-cell amount-expense">-${Math.abs(Number(t.amount || 0)).toFixed(2)} zł</td>
-                    <td style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.first_payment)}</td>
-                    <td style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.last_payment)}</td>
-                    <td style="text-align: center;">
-                        <button type="button" class="btn-row-action" title="Szczegóły / Edytuj" data-id="${t.id}">Edytuj</button>
+                    <td class="td-id">${t.id}</td>
+                    <td class="td-name" style="font-weight: 600;">${escapeHtml(t.name || "")}</td>
+                    <td class="td-type"><span class="type-badge">${escapeHtml(t.type || "Codzienny")}</span></td>
+                    <td class="td-amount" style="text-align: right;" class="amount-cell amount-expense">-${Math.abs(Number(t.amount || 0)).toFixed(2)} zł</td>
+                    <td class="td-date" style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.last_payment || t.first_payment)}</td>
+                    <td class="td-repayment" style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.first_payment)}</td>
+                    <td class="td-actions" style="text-align: center; white-space: nowrap;">
+                        <div class="row-actions-dropdown">
+                            <button type="button" class="btn-row-more" title="Więcej akcji">•••</button>
+                            <div class="row-actions-menu" style="display: none;">
+                                <button type="button" class="row-action-item action-edit">Edytuj</button>
+                                <button type="button" class="row-action-item action-save-trans">Zapisz transakcję</button>
+                            </div>
+                        </div>
                     </td>
                 `;
             } else {
@@ -623,67 +892,136 @@ function renderTransactionsTable() {
                 let rowClass = isIncome ? "row-income" : "row-expense";
                 if (isSavingsType) rowClass = "row-savings";
 
-                // Formatowanie kwoty:
-                // Gdy konto oszczędnościowe -> kwota niebieska
-                // Gdy zaznaczone oszczędności (reszta groszy) -> -12.30 zł na czerwono oraz -80gr na niebiesko
+                // Formatowanie kwoty oraz oszczędności
                 let amountHtml = "";
                 const baseAmount = Number(t.amount || 0);
                 const sav = Number(t.savings || 0);
 
                 if (isSavingsType) {
-                    amountHtml = `<span class="amount-cell amount-savings-blue">${baseAmount.toFixed(2)} zł</span>`;
-                } else if (!isIncome && sav > 0) {
-                    const groszeStr = Math.round(sav * 100) + "gr";
-                    amountHtml = `
-                        <span class="amount-cell amount-expense">${baseAmount.toFixed(2)} zł</span>
-                        <span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;">-${groszeStr}</span>
-                    `;
+                    // Typ "Oszczędności" - np. wydatek/przelew na oszczędności (-660 zł na czerwono)
+                    const absVal = Math.abs(baseAmount);
+                    if (baseAmount < 0) {
+                        amountHtml = `<span class="amount-cell amount-expense">-${absVal.toFixed(2)} zł</span>`;
+                    } else {
+                        // Wpłata bezpośrednia na konto oszczędnościowe (+ na niebiesko)
+                        amountHtml = `<span class="amount-cell amount-savings-blue">+${absVal.toFixed(2)} zł</span>`;
+                    }
+                    if (sav > 0) {
+                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">+${sav.toFixed(2)} zł</span>`;
+                    }
+                } else if (!isIncome) {
+                    // Zwykły wydatek (z ewentualną końcówką do skarbonki)
+                    amountHtml = `<span class="amount-cell amount-expense">-${Math.abs(baseAmount).toFixed(2)} zł</span>`;
+                    if (sav > 0) {
+                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">+${sav.toFixed(2)} zł</span>`;
+                    }
                 } else {
-                    const sign = isIncome ? "+" : "";
-                    const amountClass = isIncome ? "amount-income" : "amount-expense";
-                    amountHtml = `<span class="amount-cell ${amountClass}">${sign}${baseAmount.toFixed(2)} zł</span>`;
+                    // Zwykły przychód (z ewentualną skarbonką)
+                    amountHtml = `<span class="amount-cell amount-income">+${baseAmount.toFixed(2)} zł</span>`;
+                    if (sav > 0) {
+                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">+${sav.toFixed(2)} zł</span>`;
+                    }
                 }
 
                 tr.className = rowClass;
                 tr.innerHTML = `
-                    <td>${t.id}</td>
-                    <td style="font-weight: 500;">${escapeHtml(t.name)}</td>
-                    <td><span class="type-badge">${escapeHtml(t.type || "Codzienny")}</span></td>
-                    <td style="text-align: right;">${amountHtml}</td>
-                    <td style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.date)}</td>
-                    <td style="text-align: center;">
-                        <button type="button" class="btn-row-action" title="Szczegóły / Edytuj" data-id="${t.id}">Edytuj</button>
+                    <td class="td-id">${t.id}</td>
+                    <td class="td-name" style="font-weight: 500;">${escapeHtml(t.name)}</td>
+                    <td class="td-type"><span class="type-badge">${escapeHtml(t.type || "Codzienny")}</span></td>
+                    <td class="td-amount" style="text-align: right; white-space: nowrap;">${amountHtml}</td>
+                    <td class="td-date" style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.date)}</td>
+                    <td class="td-actions" style="text-align: center;">
+                        <div class="row-actions-dropdown">
+                            <button type="button" class="btn-row-more" title="Więcej akcji">•••</button>
+                            <div class="row-actions-menu" style="display: none;">
+                                <button type="button" class="row-action-item action-edit">Edytuj</button>
+                            </div>
+                        </div>
                     </td>
                 `;
             }
 
-            const btnAction = tr.querySelector(".btn-row-action");
-            if (btnAction) {
-                btnAction.addEventListener("click", () => openEntryEditModal(t.id));
+            // Obsługa rozwijanego menu 3 kropek
+            const btnMore = tr.querySelector(".btn-row-more");
+            const menuMore = tr.querySelector(".row-actions-menu");
+            if (btnMore && menuMore) {
+                btnMore.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const isOpen = menuMore.style.display === "flex";
+                    // Zamknij wszystkie inne otwarte menu w tabeli
+                    document.querySelectorAll(".row-actions-menu").forEach(m => {
+                        m.style.display = "none";
+                    });
+                    document.querySelectorAll(".btn-row-more").forEach(b => {
+                        b.classList.remove("is-active");
+                    });
+                    if (!isOpen) {
+                        menuMore.style.display = "flex";
+                        btnMore.classList.add("is-active");
+                    }
+                });
+            }
+
+            const btnEdit = tr.querySelector(".action-edit");
+            if (btnEdit) {
+                btnEdit.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    if (menuMore) menuMore.style.display = "none";
+                    if (btnMore) btnMore.classList.remove("is-active");
+                    openEntryEditModal(t.id);
+                });
+            }
+
+            const btnSaveTrans = tr.querySelector(".action-save-trans");
+            if (btnSaveTrans) {
+                btnSaveTrans.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    if (menuMore) menuMore.style.display = "none";
+                    if (btnMore) btnMore.classList.remove("is-active");
+                    if (state.currentDb === "debts") {
+                        handleConvertDebtToTransaction(t);
+                    } else if (state.currentDb === "subscriptions") {
+                        handleConvertSubscriptionToTransaction(t);
+                    }
+                });
             }
 
             tbody.appendChild(tr);
         });
     }
 
-    updatePaginationControls();
     updateDashboardStats();
 }
 
-function updatePaginationControls() {
-    const currentText = document.getElementById("paginationCurrentText");
-    const btnPrev = document.getElementById("btnPagePrev");
-    const btnNext = document.getElementById("btnPageNext");
+/**
+ * Dynamiczne doładowanie kolejnej porcji (np. 30 rekordów) przy przewijaniu tabeli.
+ * Zawiera pełne zabezpieczenie przed nadmiernym lub nieskończonym wywoływaniem.
+ */
+function loadMoreTableRecords() {
+    if (state.infiniteScroll.allLoaded || state.infiniteScroll.isLoadingMore) {
+        return;
+    }
 
-    if (currentText) {
-        currentText.textContent = `Strona ${state.pagination.currentPage} z ${state.pagination.totalPages}`;
+    const items = getCurrentDbList();
+    const totalItems = items.length;
+
+    if (state.infiniteScroll.renderedCount >= totalItems) {
+        state.infiniteScroll.allLoaded = true;
+        const endElem = document.getElementById("tableInfiniteEnd");
+        if (endElem) endElem.style.display = "none";
+        return;
     }
-    if (btnPrev) {
-        btnPrev.disabled = state.pagination.currentPage <= 1;
-    }
-    if (btnNext) {
-        btnNext.disabled = state.pagination.currentPage >= state.pagination.totalPages;
-    }
+
+    state.infiniteScroll.isLoadingMore = true;
+
+    // Zwiększenie liczby renderowanych rekordów o batchSize (30)
+    state.infiniteScroll.renderedCount += state.infiniteScroll.batchSize;
+    renderTransactionsTable();
+
+    // Krótkie opóźnienie przed kolejnym potencjalnym wywołaniem, aby uniknąć pętli
+    setTimeout(() => {
+        state.infiniteScroll.isLoadingMore = false;
+    }, 100);
 }
 
 // SZYBKIE DODAWANIE TRANSAKCJI
@@ -742,12 +1080,18 @@ function handleQuickAddSubmit(e) {
         const type = selectType.value || "Codzienny";
 
         // MECHANIZM OSZCZĘDNOŚCI:
-        // Tyle ile groszy brakuje do pełnej złotówki (np. z 13.20 brakuje 0.80) trafia do oszczędności
-        let savingsGrosze = 0;
-        if (checkSavings && checkSavings.checked && state.quickKind === "expense") {
-            const fractional = baseAmount % 1;
-            if (fractional > 0.001) {
-                savingsGrosze = Math.round((1 - fractional) * 100) / 100;
+        // Odczyt z pola kwoty oszczędności jeśli checkbox jest zaznaczony
+        const inputSavingsAmount = document.getElementById("quickInputSavingsAmount");
+        let savingsVal = 0;
+        if (checkSavings && checkSavings.checked) {
+            if (inputSavingsAmount && inputSavingsAmount.value) {
+                savingsVal = Math.abs(parseFloat(inputSavingsAmount.value) || 0);
+            } else {
+                // Jeśli pole puste, oblicz grosze do pełnej złotówki
+                const fractional = baseAmount % 1;
+                if (fractional > 0.001) {
+                    savingsVal = Math.round((1 - fractional) * 100) / 100;
+                }
             }
         }
 
@@ -756,7 +1100,7 @@ function handleQuickAddSubmit(e) {
             name: name,
             type: type,
             amount: finalAmount,
-            savings: savingsGrosze,
+            savings: savingsVal,
             date: todayStr
         };
     }
@@ -773,9 +1117,14 @@ function handleQuickAddSubmit(e) {
     if (inputPerson) inputPerson.value = "";
     const inputLoan = document.getElementById("quickInputLoanDate");
     const inputRepay = document.getElementById("quickInputRepayDate");
+    const inputSavingsAmount = document.getElementById("quickInputSavingsAmount");
     if (inputLoan) inputLoan.value = "";
     if (inputRepay) inputRepay.value = "";
     if (checkSavings) checkSavings.checked = false;
+    if (inputSavingsAmount) {
+        inputSavingsAmount.value = "";
+        inputSavingsAmount.disabled = true;
+    }
     inputName.focus();
 
     // Synchronizacja w tle
@@ -786,8 +1135,89 @@ function handleQuickAddSubmit(e) {
     });
 }
 
+/**
+ * Specjalna mechanika długów:
+ * Po kliknięciu 'Zapisz transakcję' w tabeli długów, przełączamy bazę na transakcje
+ * i otwieramy pop-up dodania nowego wpisu z uzupełnionymi danymi:
+ * - Nazwa: Osoba - Za co (Typ długu)
+ * - Kwota: kwota z długu
+ * - Data: data pożyczki
+ * - Kategoria (typ): Codzienny
+ * - Rodzaj transakcji: Wydatek (-) lub Zysk (+) w zależności od długu
+ */
+function handleConvertDebtToTransaction(debt) {
+    if (!debt) return;
+
+    const person = (debt.person || "").trim();
+    const what = (debt.name || "").trim();
+    const debtType = (debt.debt_type || "").trim();
+
+    // Łączenie: [Osoba] - [Za co] ([Typ długu])
+    let combinedName = "";
+    if (person && what) {
+        combinedName = `${person} - ${what}`;
+    } else {
+        combinedName = person || what || "Dług";
+    }
+    if (debtType) {
+        combinedName += ` (${debtType})`;
+    }
+
+    const rawAmt = Math.abs(parseFloat(debt.amount) || 0);
+    const loanDate = debt.loan_date || new Date().toISOString().split("T")[0];
+
+    // "Dług u mnie" to pożyczenie komuś pieniędzy (wydatek -) lub spłata (zysk +),
+    // domyślnie przy pożyczce pieniądze od nas wyszły, więc wydatek:
+    const isExpense = debt.debt_type === "Dług u mnie" ? true : false;
+
+    // Przełączamy widok na transakcje
+    openDashboardScreen("transactions");
+
+    // Otwieramy pop-up dodania nowego wpisu z prefillem
+    openEntryEditModal(null, {
+        name: combinedName,
+        amount: rawAmt,
+        date: loanDate,
+        type: "Codzienny",
+        isExpense: isExpense
+    });
+}
+
+/**
+ * Specjalna mechanika subskrypcji / stałych kosztów:
+ * Po kliknięciu 'Zapisz transakcję' w tabeli subskrypcji, przełączamy bazę na transakcje
+ * i otwieramy pop-up dodania nowego wpisu z prefillem (Nazwa usługi, Koszt, Kategoria, dzisiejsza data).
+ * Po zapisaniu transakcji aktualizujemy 'last_payment' w subskrypcji na wybraną datę.
+ */
+let pendingSubscriptionSource = null;
+
+function handleConvertSubscriptionToTransaction(subscription) {
+    if (!subscription) return;
+
+    const subName = (subscription.name || "Usługa").trim();
+    const subType = subscription.type || "Codzienny";
+    const rawAmt = Math.abs(parseFloat(subscription.amount) || 0);
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    pendingSubscriptionSource = {
+        id: subscription.id
+    };
+
+    // Przełączamy widok na transakcje
+    openDashboardScreen("transactions");
+
+    // Otwieramy pop-up dodania nowego wpisu z prefillem
+    openEntryEditModal(null, {
+        name: subName,
+        amount: rawAmt,
+        date: todayStr,
+        type: subType,
+        isExpense: true
+    });
+}
+
 // MODAL SZCZEGÓŁÓW / EDYCJI / NOWEGO WPISU (NA TELEFONIE I DESKTOPIE)
-function openEntryEditModal(id = null) {
+function openEntryEditModal(id = null, prefillData = null) {
     const list = getCurrentDbList();
     const isNew = (id === null || id === undefined || id === "");
     const entry = isNew ? null : list.find(t => Number(t.id) === Number(id));
@@ -815,36 +1245,73 @@ function openEntryEditModal(id = null) {
     const todayStr = new Date().toISOString().split("T")[0];
 
     if (isNew) {
-        if (modalTitle) modalTitle.textContent = "Dodaj nowy wpis";
-        if (btnSave) btnSave.textContent = "Dodaj wpis";
+        if (modalTitle) modalTitle.textContent = "Dodaj rekord";
+        if (btnSave) btnSave.textContent = "Dodaj rekord";
         if (btnDelete) btnDelete.style.display = "none";
-
-        if (editEntryId) editEntryId.value = "";
-        if (editEntryName) editEntryName.value = "";
-        if (editEntryPerson) editEntryPerson.value = "";
-        if (editEntryAmount) editEntryAmount.value = "";
-        if (editEntrySavings) editEntrySavings.value = "0";
-        if (editEntryDate) editEntryDate.value = todayStr;
-        if (editEntryRepaymentDate) editEntryRepaymentDate.value = "";
     } else {
-        if (modalTitle) modalTitle.textContent = "Szczegóły / Edycja wpisu";
+        if (modalTitle) modalTitle.textContent = "Edycja rekordu";
         if (btnSave) btnSave.textContent = "Zapisz zmiany";
-        if (btnDelete) btnDelete.style.display = "inline-block";
-
-        if (editEntryId) editEntryId.value = entry.id;
-        if (editEntryName) editEntryName.value = entry.name || "";
-        if (editEntryAmount) editEntryAmount.value = entry.amount !== undefined ? entry.amount : 0;
-        if (editEntrySavings) editEntrySavings.value = entry.savings || 0;
-        if (editEntryDate) editEntryDate.value = entry.date || entry.loan_date || entry.first_payment || todayStr;
+        if (btnDelete) btnDelete.style.display = "inline-flex";
     }
 
+    let isExpense = true;
+    let amtVal = "";
+    let savVal = "";
+    let prefillName = "";
+    let prefillDate = todayStr;
+    let prefillType = "Codzienny";
+
+    if (isNew) {
+        if (prefillData) {
+            prefillName = prefillData.name || "";
+            amtVal = prefillData.amount ? Math.abs(Number(prefillData.amount)).toFixed(2) : "";
+            isExpense = prefillData.isExpense !== undefined ? prefillData.isExpense : true;
+            prefillDate = prefillData.date || todayStr;
+            prefillType = prefillData.type || "Codzienny";
+        } else {
+            isExpense = true;
+        }
+    } else {
+        const rawAmt = Number(entry.amount || 0);
+        isExpense = rawAmt < 0 || (rawAmt === 0 && (entry.type || "").toLowerCase() !== "praca" && (entry.type || "").toLowerCase() !== "fucha");
+        amtVal = Math.abs(rawAmt) ? Math.abs(rawAmt).toFixed(2) : "";
+        savVal = entry.savings ? Number(entry.savings).toFixed(2) : "";
+    }
+
+    const btnModalKindExpense = document.getElementById("btnModalKindExpense");
+    const btnModalKindIncome = document.getElementById("btnModalKindIncome");
+    const modalCheckSavings = document.getElementById("modalCheckSavings");
+
+    if (btnModalKindExpense && btnModalKindIncome) {
+        btnModalKindExpense.className = "btn-flow " + (isExpense ? "active flow-expense" : "");
+        btnModalKindIncome.className = "btn-flow " + (!isExpense ? "active flow-income" : "");
+    }
+
+    if (modalCheckSavings && editEntrySavings) {
+        modalCheckSavings.checked = Boolean(savVal && parseFloat(savVal) > 0);
+        editEntrySavings.disabled = !modalCheckSavings.checked;
+        editEntrySavings.value = savVal;
+    }
+
+    if (editEntryId) editEntryId.value = isNew ? "" : entry.id;
+    if (editEntryName) editEntryName.value = isNew ? prefillName : (entry.name || "");
+    if (editEntryAmount) editEntryAmount.value = amtVal;
+    
+    const rawDate = isNew ? prefillDate : (entry.date || entry.loan_date || entry.first_payment || todayStr);
+    if (editEntryDate) editEntryDate.value = formatDateToInput(rawDate) || todayStr;
+
+    const groupKind = document.getElementById("groupEditKind");
+
     if (state.currentDb === "debts") {
+        if (groupKind) groupKind.style.display = "none";
         if (groupPerson) groupPerson.style.display = "block";
         if (editEntryPerson && !isNew) editEntryPerson.value = entry.person || "";
         if (groupDebtType) groupDebtType.style.display = "block";
         if (editEntryDebtType && !isNew) editEntryDebtType.value = entry.debt_type || "Dług u mnie";
         if (groupRepaymentDate) groupRepaymentDate.style.display = "block";
-        if (editEntryRepaymentDate && !isNew) editEntryRepaymentDate.value = entry.repayment_date || "";
+        if (editEntryRepaymentDate && !isNew) {
+            editEntryRepaymentDate.value = formatDateToInput(entry.repayment_date) || "";
+        }
 
         if (groupType) groupType.style.display = "none";
         if (groupSavings) groupSavings.style.display = "none";
@@ -854,9 +1321,17 @@ function openEntryEditModal(id = null) {
         if (groupRepaymentDate) groupRepaymentDate.style.display = "none";
 
         if (groupType) groupType.style.display = "block";
-        if (editEntryType && !isNew) editEntryType.value = entry.type || "Codzienny";
+        if (editEntryType) {
+            editEntryType.value = isNew ? prefillType : (entry.type || "Codzienny");
+        }
 
+        if (groupKind) groupKind.style.display = (state.currentDb === "transactions") ? "block" : "none";
         if (groupSavings) groupSavings.style.display = (state.currentDb === "transactions") ? "block" : "none";
+    }
+
+    const labelEditAmount = document.getElementById("labelEditEntryAmount");
+    if (labelEditAmount) {
+        labelEditAmount.textContent = (state.currentDb === "subscriptions") ? "Koszt *" : "Kwota *";
     }
 
     if (modal) modal.style.display = "flex";
@@ -871,8 +1346,19 @@ function handleEntryEditSubmit(e) {
     const list = getCurrentDbList();
 
     const name = document.getElementById("editEntryName").value.trim();
-    const amount = parseFloat(document.getElementById("editEntryAmount").value) || 0;
+    const rawAmount = Math.abs(parseFloat(document.getElementById("editEntryAmount").value) || 0);
     const todayStr = new Date().toISOString().split("T")[0];
+
+    const btnModalKindExpense = document.getElementById("btnModalKindExpense");
+    const isExpense = btnModalKindExpense ? btnModalKindExpense.classList.contains("active") : true;
+    const finalAmount = isExpense ? -rawAmount : rawAmount;
+
+    const modalCheckSavings = document.getElementById("modalCheckSavings");
+    const editEntrySavings = document.getElementById("editEntrySavings");
+    let savingsVal = 0;
+    if (modalCheckSavings && modalCheckSavings.checked && editEntrySavings) {
+        savingsVal = Math.abs(parseFloat(editEntrySavings.value) || 0);
+    }
 
     if (isNew) {
         const newId = list.reduce((max, t) => Math.max(max, Number(t.id) || 0), 0) + 1;
@@ -884,7 +1370,7 @@ function handleEntryEditSubmit(e) {
                 person: document.getElementById("editEntryPerson").value.trim(),
                 name: name,
                 debt_type: document.getElementById("editEntryDebtType").value,
-                amount: amount,
+                amount: rawAmount,
                 loan_date: document.getElementById("editEntryDate").value || todayStr,
                 repayment_date: document.getElementById("editEntryRepaymentDate").value || "",
                 update: todayStr
@@ -894,8 +1380,8 @@ function handleEntryEditSubmit(e) {
                 id: newId,
                 name: name,
                 type: document.getElementById("editEntryType").value,
-                amount: -Math.abs(amount),
-                savings: parseFloat(document.getElementById("editEntrySavings").value) || 0,
+                amount: -rawAmount,
+                savings: 0,
                 first_payment: document.getElementById("editEntryDate").value || todayStr,
                 last_payment: todayStr
             };
@@ -904,8 +1390,8 @@ function handleEntryEditSubmit(e) {
                 id: newId,
                 name: name,
                 type: document.getElementById("editEntryType").value,
-                amount: amount,
-                savings: parseFloat(document.getElementById("editEntrySavings").value) || 0,
+                amount: finalAmount,
+                savings: savingsVal,
                 date: document.getElementById("editEntryDate").value || todayStr
             };
         }
@@ -920,6 +1406,28 @@ function handleEntryEditSubmit(e) {
             db: state.currentDb,
             data: newRecord
         });
+
+        // Jeśli transakcja pochodziła z akcji 'Zapisz transakcję' w subskrypcjach, aktualizujemy 'last_payment'
+        if (pendingSubscriptionSource && pendingSubscriptionSource.id) {
+            const subId = pendingSubscriptionSource.id;
+            pendingSubscriptionSource = null;
+            const subEntry = state.subscriptions.find(s => Number(s.id) === Number(subId));
+            if (subEntry) {
+                subEntry.last_payment = newRecord.date || todayStr;
+                const cachedSubs = localStorage.getItem(CACHE_KEYS.SUBSCRIPTIONS_REAL);
+                if (cachedSubs || state.isAdmin) {
+                    try {
+                        localStorage.setItem(CACHE_KEYS.SUBSCRIPTIONS_REAL, JSON.stringify(state.subscriptions));
+                    } catch (e) {}
+                }
+                enqueueSyncTask({
+                    type: "editSubscription",
+                    db: "subscriptions",
+                    id: subId,
+                    data: subEntry
+                });
+            }
+        }
         return;
     }
 
@@ -928,22 +1436,24 @@ function handleEntryEditSubmit(e) {
     if (!entry) return;
 
     entry.name = name;
-    entry.amount = amount;
 
     if (state.currentDb === "debts") {
+        entry.amount = rawAmount;
         entry.person = document.getElementById("editEntryPerson").value.trim();
         entry.debt_type = document.getElementById("editEntryDebtType").value;
         entry.loan_date = document.getElementById("editEntryDate").value;
         entry.repayment_date = document.getElementById("editEntryRepaymentDate").value;
         entry.update = todayStr;
     } else if (state.currentDb === "subscriptions") {
+        entry.amount = -rawAmount;
         entry.type = document.getElementById("editEntryType").value;
         entry.first_payment = document.getElementById("editEntryDate").value;
-        entry.savings = parseFloat(document.getElementById("editEntrySavings").value) || 0;
+        entry.savings = 0;
     } else {
+        entry.amount = finalAmount;
         entry.type = document.getElementById("editEntryType").value;
         entry.date = document.getElementById("editEntryDate").value;
-        entry.savings = parseFloat(document.getElementById("editEntrySavings").value) || 0;
+        entry.savings = savingsVal;
     }
 
     saveCurrentDbToCache();
@@ -958,20 +1468,49 @@ function handleEntryEditSubmit(e) {
     });
 }
 
+let pendingDeleteAction = null;
+
+function promptConfirmDelete({ title, message, onConfirm }) {
+    const modal = document.getElementById("confirmDeleteModal");
+    const modalTitle = document.getElementById("confirmDeleteModalTitle");
+    const modalMessage = document.getElementById("confirmDeleteModalMessage");
+
+    if (modalTitle && title) modalTitle.textContent = title;
+    if (modalMessage && message) modalMessage.textContent = message;
+
+    pendingDeleteAction = onConfirm;
+    if (modal) modal.style.display = "flex";
+}
+
 function handleDeleteFromEditModal() {
     const id = Number(document.getElementById("editEntryId").value);
     if (!id) return;
 
-    let list = getCurrentDbList();
-    setCurrentDbList(list.filter(t => Number(t.id) !== id));
-    saveCurrentDbToCache();
-    renderTransactionsTable();
-    closeModal("entryEditModal");
+    const list = getCurrentDbList();
+    const entry = list.find(t => Number(t.id) === id);
+    const entryName = entry ? (entry.name || "ten wpis") : "ten wpis";
 
-    enqueueSyncTask({
-        type: "delete" + capitalize(state.currentDb),
-        db: state.currentDb,
-        id: id
+    let dbNameLabel = "rekord";
+    if (state.currentDb === "debts") dbNameLabel = "dług";
+    else if (state.currentDb === "subscriptions") dbNameLabel = "subskrypcję / usługę";
+    else dbNameLabel = "transakcję";
+
+    promptConfirmDelete({
+        title: "Usunąć " + dbNameLabel + "?",
+        message: "Czy na pewno chcesz usunąć " + dbNameLabel + " \"" + entryName + "\"? Tej operacji nie można cofnąć.",
+        onConfirm: () => {
+            let currentList = getCurrentDbList();
+            setCurrentDbList(currentList.filter(t => Number(t.id) !== id));
+            saveCurrentDbToCache();
+            renderTransactionsTable();
+            closeModal("entryEditModal");
+
+            enqueueSyncTask({
+                type: "delete" + capitalize(state.currentDb),
+                db: state.currentDb,
+                id: id
+            });
+        }
     });
 }
 
@@ -989,13 +1528,113 @@ function renderTypesManagementList() {
     state.types.forEach(type => {
         const row = document.createElement("div");
         row.className = "type-list-row";
-        row.innerHTML = `
-            <span>${escapeHtml(type)}</span>
-            <button type="button" class="btn-type-delete" data-type="${escapeHtml(type)}">[Usuń]</button>
+
+        // Tryb normalny
+        const displayDiv = document.createElement("div");
+        displayDiv.style.display = "flex";
+        displayDiv.style.justifyContent = "space-between";
+        displayDiv.style.alignItems = "center";
+        displayDiv.style.width = "100%";
+
+        displayDiv.innerHTML = `
+            <span class="type-name-label">${escapeHtml(type)}</span>
+            <div class="type-row-actions">
+                <button type="button" class="btn-type-edit">[Edytuj]</button>
+                <button type="button" class="btn-type-delete">[Usuń]</button>
+            </div>
         `;
 
-        row.querySelector(".btn-type-delete").addEventListener("click", () => handleDeleteType(type));
+        // Tryb edycji w wierszu
+        const editDiv = document.createElement("div");
+        editDiv.className = "type-edit-inline";
+        editDiv.style.display = "none";
+        editDiv.innerHTML = `
+            <input type="text" class="form-input type-edit-input" value="${escapeHtml(type)}">
+            <button type="button" class="btn-primary btn-type-save" style="padding: 4px 10px; font-size: 13px;">Zapisz</button>
+            <button type="button" class="btn-secondary btn-type-cancel" style="padding: 4px 10px; font-size: 13px;">Anuluj</button>
+        `;
+
+        displayDiv.querySelector(".btn-type-edit").addEventListener("click", () => {
+            displayDiv.style.display = "none";
+            editDiv.style.display = "flex";
+            const input = editDiv.querySelector(".type-edit-input");
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        });
+
+        displayDiv.querySelector(".btn-type-delete").addEventListener("click", () => handleDeleteType(type));
+
+        editDiv.querySelector(".btn-type-cancel").addEventListener("click", () => {
+            editDiv.style.display = "none";
+            displayDiv.style.display = "flex";
+        });
+
+        editDiv.querySelector(".btn-type-save").addEventListener("click", () => {
+            const input = editDiv.querySelector(".type-edit-input");
+            const newVal = input ? input.value.trim() : "";
+            if (!newVal || newVal === type) {
+                editDiv.style.display = "none";
+                displayDiv.style.display = "flex";
+                return;
+            }
+            handleRenameType(type, newVal);
+        });
+
+        editDiv.querySelector(".type-edit-input").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                editDiv.querySelector(".btn-type-save").click();
+            } else if (e.key === "Escape") {
+                editDiv.querySelector(".btn-type-cancel").click();
+            }
+        });
+
+        row.appendChild(displayDiv);
+        row.appendChild(editDiv);
         container.appendChild(row);
+    });
+}
+
+function handleRenameType(oldType, newType) {
+    const errorBox = document.getElementById("newTypeError");
+    if (state.types.includes(newType) && newType !== oldType) {
+        if (errorBox) {
+            errorBox.textContent = "Taki typ już istnieje.";
+            errorBox.style.display = "block";
+        }
+        return;
+    }
+    if (errorBox) errorBox.style.display = "none";
+
+    // Aktualizacja w liście typów
+    const idx = state.types.indexOf(oldType);
+    if (idx !== -1) {
+        state.types[idx] = newType;
+    }
+
+    // Aktualizacja powiązanych wpisów w pamięci (transakcje i subskrypcje)
+    state.transactions.forEach(t => {
+        if (t.type === oldType) t.type = newType;
+    });
+    state.subscriptions.forEach(s => {
+        if (s.type === oldType) s.type = newType;
+    });
+
+    saveCurrentDbToCache();
+    populateTypeDropdowns();
+    renderTypesManagementList();
+    renderTransactionsTable();
+
+    // Synchronizacja w tle (dodanie nowego i usunięcie starego ze skryptu)
+    enqueueSyncTask({
+        type: "addType",
+        name: newType
+    });
+    enqueueSyncTask({
+        type: "deleteType",
+        name: oldType
     });
 }
 
@@ -1028,13 +1667,19 @@ function handleAddType() {
 }
 
 function handleDeleteType(typeName) {
-    state.types = state.types.filter(t => t !== typeName);
-    populateTypeDropdowns();
-    renderTypesManagementList();
+    promptConfirmDelete({
+        title: "Usunąć typ?",
+        message: "Czy na pewno chcesz usunąć typ \"" + typeName + "\" z ustawień bazy? Tej operacji nie można cofnąć.",
+        onConfirm: () => {
+            state.types = state.types.filter(t => t !== typeName);
+            populateTypeDropdowns();
+            renderTypesManagementList();
 
-    enqueueSyncTask({
-        type: "deleteType",
-        name: typeName
+            enqueueSyncTask({
+                type: "deleteType",
+                name: typeName
+            });
+        }
     });
 }
 

@@ -5,7 +5,34 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     overflow-x: auto;
-    margin-bottom: 12px;
+    overflow-y: auto; /* Własny scrollbar WYŁĄCZNIE dla samej tabeli */
+    /* Dokładna wysokość na 10 rekordów: nagłówek (39px) + 10 wierszy po 41px = 449px */
+    height: 449px;
+    max-height: 449px;
+    margin-bottom: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #3b4453 rgba(17, 20, 24, 0.6);
+}
+
+/* Własny styl paska przewijania (scrollbar) dla samej tabeli */
+.glass-table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.glass-table-wrapper::-webkit-scrollbar-track {
+    background: rgba(17, 20, 24, 0.6);
+    border-radius: var(--radius-sm);
+}
+
+.glass-table-wrapper::-webkit-scrollbar-thumb {
+    background-color: #3b4453;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(26, 30, 36, 0.8);
+}
+
+.glass-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: #4a5568;
 }
 
 .pocket-table {
@@ -16,7 +43,10 @@
 }
 
 .pocket-table th {
-    background-color: rgba(17, 20, 24, 0.6);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: rgba(20, 24, 29, 0.95);
     color: var(--color-text-muted);
     font-weight: 600;
     padding: 10px 14px;
@@ -70,8 +100,14 @@
     color: #56d364;
 }
 
+.amount-neutral {
+    color: #f0f6fc;
+}
+
 .amount-savings-blue {
     color: #58a6ff !important; /* Niebieski dla oszczędności */
+    white-space: nowrap;
+    display: inline-block;
 }
 
 .savings-tag-blue {
@@ -111,14 +147,87 @@
     background-color: var(--color-surface-hover);
 }
 
-/* NOWY WYRÓWNANY I ELEGANCKI FORMULARZ SZYBKIEGO DODAWANIA */
+/* Rozwijane menu akcji pod 3 kropkami */
+.row-actions-dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-row-more {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 1px;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-row-more:hover,
+.btn-row-more.is-active {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-main);
+}
+
+.row-actions-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background-color: #161b22;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 500;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+    overflow: hidden;
+}
+
+.row-action-item {
+    background: transparent;
+    border: none;
+    color: var(--color-text-main);
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    transition: background-color var(--transition-fast);
+}
+
+.row-action-item:hover {
+    background-color: var(--color-surface-hover);
+    color: #ffffff;
+}
+
+/* KAFELEK DO WPISYWANIA DANYCH: POD TABELĄ, PRZYKLEJONY DO STRONY */
 .quick-add-panel {
-    background-color: rgba(26, 30, 36, 0.85);
+    position: static;
+    transform: none;
+    width: 100%;
+    background-color: rgba(22, 26, 32, 0.95);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: 14px 18px;
+    padding: 12px 18px;
     margin-top: 14px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
 }
 
 /* Przycisk dodawania na telefonie */
@@ -149,12 +258,12 @@
 }
 
 @media (max-width: 900px) {
-    /* Na telefonie ukrywamy dolny formularz desktopowy, a pokazujemy przycisk otwierający pop-up */
+    /* Na telefonie ukrywamy dolny formularz desktopowy */
     .quick-add-panel {
         display: none !important;
     }
     .mobile-add-action-wrapper {
-        display: block !important;
+        display: none !important;
     }
 }
 
@@ -230,25 +339,28 @@
     color: #56d364;
 }
 
-.checkbox-savings-box {
-    height: 38px;
-    display: inline-flex;
+.savings-input-group {
+    display: flex;
     align-items: center;
-    padding: 0 10px;
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    user-select: none;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--color-text-main);
+    gap: 10px;
+    height: 38px;
 }
 
-.checkbox-savings-box input {
+.savings-input-group .form-input:disabled {
+    opacity: 0.45;
+    background-color: rgba(22, 27, 34, 0.4);
+    border-color: rgba(48, 54, 61, 0.5);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+.checkbox-savings-only {
+    width: 20px;
+    height: 20px;
     cursor: pointer;
-    width: 16px;
-    height: 16px;
+    accent-color: #3b5982;
+    flex-shrink: 0;
+    margin: 0;
 }
 
 .btn-quick-save {
@@ -300,6 +412,15 @@
     border-radius: var(--radius-sm);
 }
 
+@media (max-width: 600px) {
+    .active-profile-pill .profile-name-text {
+        display: none;
+    }
+    .active-profile-pill {
+        padding: 4px;
+    }
+}
+
 .active-profile-pill img.mini-avatar {
     width: 24px;
     height: 24px;
@@ -346,6 +467,18 @@
     width: 100%;
 }
 
+.modal-amount-savings-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.modal-amount-savings-row .flex-1 {
+    flex: 1;
+    min-width: 0;
+}
+
 .modal-window.modal-settings-panel {
     max-width: 540px;
     width: 100%;
@@ -374,6 +507,27 @@
     font-size: 14px;
 }
 
+.type-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-type-edit {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast);
+}
+
+.btn-type-edit:hover {
+    color: #58a6ff;
+}
+
 .btn-type-delete {
     background: transparent;
     border: none;
@@ -381,14 +535,196 @@
     cursor: pointer;
     font-size: 14px;
     padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast);
 }
 
 .btn-type-delete:hover {
     color: #ff7b72;
 }
 
+.type-edit-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.type-edit-inline input {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 14px;
+    flex: 1;
+}
+
 .add-type-inline-form {
     display: flex;
     gap: 8px;
     margin-top: 10px;
+}
+
+/* ==========================================================================
+   Responsywność tabeli: widok kafelkowy (cards) na urządzeniach mobilnych (<= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+    .glass-table-wrapper {
+        height: auto;
+        max-height: calc(100vh - 215px);
+        min-height: 280px;
+        background: transparent;
+        border: none;
+        padding: 0;
+        overflow-y: auto;
+    }
+
+    /* Ukrywamy tradycyjny nagłówek tabeli */
+    .pocket-table thead {
+        display: none !important;
+    }
+
+    .pocket-table,
+    .pocket-table tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    /* Każdy wiersz tabeli staje się samodzielnym, czytelnym kafelkiem */
+    .pocket-table tr {
+        display: grid !important;
+        grid-template-columns: 1fr auto auto;
+        grid-template-areas:
+            "title  amount date"
+            "type   amount actions";
+        align-items: center;
+        gap: 4px 10px;
+        padding: 10px 12px;
+        background-color: rgba(26, 30, 36, 0.75) !important;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        position: relative;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .pocket-table tr.row-expense {
+        border-left: 3px solid #ff7b72;
+    }
+
+    .pocket-table tr.row-income {
+        border-left: 3px solid #56d364;
+    }
+
+    .pocket-table tr.row-savings {
+        border-left: 3px solid #58a6ff;
+    }
+
+    .pocket-table td {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    /* 1. Ukrywamy kolumny zbędne na małym kafelku */
+    .pocket-table td.td-id,
+    .pocket-table td.td-repayment {
+        display: none !important;
+    }
+
+    /* 2. Nazwa wpisu i osoba: lewa góra */
+    .pocket-table td.td-name,
+    .pocket-table td.td-person {
+        grid-area: title;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+    }
+
+    .pocket-table tr:has(.td-person) td.td-name {
+        display: none !important;
+    }
+
+    /* 3. Typ wpisu: idzie POD nazwę */
+    .pocket-table td.td-type {
+        grid-area: type;
+        display: flex;
+        align-items: center;
+    }
+
+    .pocket-table td.td-type .type-badge {
+        font-size: 11px;
+        padding: 1px 6px;
+        border-radius: var(--radius-sm);
+        background-color: rgba(17, 20, 24, 0.7);
+        border: 1px solid var(--color-border-subtle);
+        color: var(--color-text-muted);
+    }
+
+    /* 4. Kwota: na środku / po prawej od nazwy */
+    .pocket-table td.td-amount {
+        grid-area: amount;
+        text-align: right !important;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    .pocket-table td.td-amount .amount-cell {
+        font-size: 14px;
+        font-weight: 700;
+        font-family: monospace, sans-serif;
+    }
+
+    .pocket-table td.td-amount .amount-savings-blue {
+        font-size: 12px !important;
+        font-weight: 600;
+        margin-left: 0 !important;
+    }
+
+    /* 5. Data: prawy górny róg */
+    .pocket-table td.td-date {
+        grid-area: date;
+        text-align: right !important;
+        font-size: 11px !important;
+        color: var(--color-text-muted) !important;
+        font-family: monospace, sans-serif;
+    }
+
+    /* 6. Akcje (prawa krawędź - przycisk 3 kropki) */
+    .pocket-table td.td-actions {
+        grid-area: actions;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .pocket-table td.td-actions .btn-row-more {
+        width: 28px;
+        height: 24px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        font-size: 14px;
+        color: var(--color-text-muted);
+        opacity: 0.8;
+    }
+
+    .pocket-table td.td-actions .btn-row-more:hover,
+    .pocket-table td.td-actions .btn-row-more.is-active {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: var(--color-text-main);
+        opacity: 1;
+    }
+
+    .pocket-table td.td-actions .btn-row-action.btn-row-edit:hover::before,
+    .pocket-table td.td-actions .btn-row-action.btn-row-edit:active::before {
+        opacity: 1;
+        color: var(--color-text-main);
+    }
 }

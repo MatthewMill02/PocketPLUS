@@ -38,6 +38,11 @@ body:not(.has-grouped-shelves)::-webkit-scrollbar {
     display: none; /* Chrome/Safari */
 }
 
+/* W widoku pulpitu (dashboard) strona ma min-height 100vh ze stopką dociągniętą do dołu */
+body.screen-dashboard {
+    min-height: 100vh;
+}
+
 body::before {
     content: '';
     position: fixed;
@@ -59,14 +64,16 @@ body::before {
     transition: filter var(--transition-normal);
 }
 
-/* Wariant fioletowy dla bazy długów (Marco) */
+/* Wariant fioletowy dla bazy długów (Marco) - dedykowany plik background2.png */
 body.theme-debts::before {
-    filter: hue-rotate(250deg) saturate(1.4) brightness(0.9);
+    background-image: url('../assets/background2.png');
+    filter: none;
 }
 
-/* Wariant czerwony dla bazy subskrypcji (Manhattan) */
+/* Wariant czerwony dla bazy subskrypcji (Manhattan) - dedykowany plik background3.png */
 body.theme-subscriptions::before {
-    filter: hue-rotate(330deg) saturate(1.5) brightness(0.95);
+    background-image: url('../assets/background3.png');
+    filter: none;
 }
 
 body.modal-open {
