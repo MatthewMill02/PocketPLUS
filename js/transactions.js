@@ -1301,21 +1301,57 @@ function openEntryEditModal(id = null, prefillData = null) {
     if (editEntryDate) editEntryDate.value = formatDateToInput(rawDate) || todayStr;
 
     const groupKind = document.getElementById("groupEditKind");
+    const labelEditKind = document.getElementById("labelEditEntryKind");
 
     if (state.currentDb === "debts") {
-        if (groupKind) groupKind.style.display = "none";
         if (groupPerson) groupPerson.style.display = "block";
         if (editEntryPerson && !isNew) editEntryPerson.value = entry.person || "";
-        if (groupDebtType) groupDebtType.style.display = "block";
-        if (editEntryDebtType && !isNew) editEntryDebtType.value = entry.debt_type || "Dług u mnie";
+        
+        // W długach ukrywamy zwykły select typu długu na rzecz przycisków rodzaju długu: Dług u mnie / Dług u osoby
+        if (groupDebtType) groupDebtType.style.display = "none";
+        if (groupType) groupType.style.display = "none";
+        if (groupSavings) groupSavings.style.display = "none";
+
         if (groupRepaymentDate) groupRepaymentDate.style.display = "block";
         if (editEntryRepaymentDate && !isNew) {
             editEntryRepaymentDate.value = formatDateToInput(entry.repayment_date) || "";
         }
 
-        if (groupType) groupType.style.display = "none";
+        // Rodzaj w długach: "Dług u mnie" vs "Dług u osoby"
+        if (groupKind) groupKind.style.display = "block";
+        if (labelEditKind) labelEditKind.textContent = "Rodzaj długu";
+        if (btnModalKindExpense) btnModalKindExpense.textContent = "Dług u mnie";
+        if (btnModalKindIncome) btnModalKindIncome.textContent = "Dług u osoby";
+
+        const isDebtToMe = isNew ? true : ((entry.debt_type || "").trim() === "Dług u mnie");
+        if (btnModalKindExpense && btnModalKindIncome) {
+            btnModalKindExpense.className = "btn-flow " + (isDebtToMe ? "active flow-expense" : "");
+            btnModalKindIncome.className = "btn-flow " + (!isDebtToMe ? "active flow-income" : "");
+        }
+    } else if (state.currentDb === "subscriptions") {
+        if (groupPerson) groupPerson.style.display = "none";
+        if (groupDebtType) groupDebtType.style.display = "none";
+        if (groupRepaymentDate) groupRepaymentDate.style.display = "none";
         if (groupSavings) groupSavings.style.display = "none";
+
+        if (groupType) groupType.style.display = "block";
+        if (editEntryType) {
+            editEntryType.value = isNew ? prefillType : (entry.type || "Codzienny");
+        }
+
+        // Rodzaj w subskrypcjach: Wydatek (-) / Zysk (+)
+        if (groupKind) groupKind.style.display = "block";
+        if (labelEditKind) labelEditKind.textContent = "Rodzaj transakcji";
+        if (btnModalKindExpense) btnModalKindExpense.textContent = "Wydatek (-)";
+        if (btnModalKindIncome) btnModalKindIncome.textContent = "Zysk (+)";
+
+        const isSubExpense = isNew ? true : (Number(entry.amount || 0) <= 0);
+        if (btnModalKindExpense && btnModalKindIncome) {
+            btnModalKindExpense.className = "btn-flow " + (isSubExpense ? "active flow-expense" : "");
+            btnModalKindIncome.className = "btn-flow " + (!isSubExpense ? "active flow-income" : "");
+        }
     } else {
+        // Transakcje
         if (groupPerson) groupPerson.style.display = "none";
         if (groupDebtType) groupDebtType.style.display = "none";
         if (groupRepaymentDate) groupRepaymentDate.style.display = "none";
@@ -1325,8 +1361,17 @@ function openEntryEditModal(id = null, prefillData = null) {
             editEntryType.value = isNew ? prefillType : (entry.type || "Codzienny");
         }
 
-        if (groupKind) groupKind.style.display = (state.currentDb === "transactions") ? "block" : "none";
-        if (groupSavings) groupSavings.style.display = (state.currentDb === "transactions") ? "block" : "none";
+        if (groupKind) groupKind.style.display = "block";
+        if (labelEditKind) labelEditKind.textContent = "Rodzaj transakcji";
+        if (btnModalKindExpense) btnModalKindExpense.textContent = "Wydatek (-)";
+        if (btnModalKindIncome) btnModalKindIncome.textContent = "Zysk (+)";
+
+        if (btnModalKindExpense && btnModalKindIncome) {
+            btnModalKindExpense.className = "btn-flow " + (isExpense ? "active flow-expense" : "");
+            btnModalKindIncome.className = "btn-flow " + (!isExpense ? "active flow-income" : "");
+        }
+
+        if (groupSavings) groupSavings.style.display = "flex";
     }
 
     const labelEditAmount = document.getElementById("labelEditEntryAmount");
@@ -1365,11 +1410,12 @@ function handleEntryEditSubmit(e) {
         let newRecord = null;
 
         if (state.currentDb === "debts") {
+            const debtTypeVal = isExpense ? "Dług u mnie" : "Dług u osoby";
             newRecord = {
                 id: newId,
                 person: document.getElementById("editEntryPerson").value.trim(),
                 name: name,
-                debt_type: document.getElementById("editEntryDebtType").value,
+                debt_type: debtTypeVal,
                 amount: rawAmount,
                 loan_date: document.getElementById("editEntryDate").value || todayStr,
                 repayment_date: document.getElementById("editEntryRepaymentDate").value || "",
@@ -1380,7 +1426,7 @@ function handleEntryEditSubmit(e) {
                 id: newId,
                 name: name,
                 type: document.getElementById("editEntryType").value,
-                amount: -rawAmount,
+                amount: finalAmount,
                 savings: 0,
                 first_payment: document.getElementById("editEntryDate").value || todayStr,
                 last_payment: todayStr
@@ -1440,12 +1486,12 @@ function handleEntryEditSubmit(e) {
     if (state.currentDb === "debts") {
         entry.amount = rawAmount;
         entry.person = document.getElementById("editEntryPerson").value.trim();
-        entry.debt_type = document.getElementById("editEntryDebtType").value;
+        entry.debt_type = isExpense ? "Dług u mnie" : "Dług u osoby";
         entry.loan_date = document.getElementById("editEntryDate").value;
         entry.repayment_date = document.getElementById("editEntryRepaymentDate").value;
         entry.update = todayStr;
     } else if (state.currentDb === "subscriptions") {
-        entry.amount = -rawAmount;
+        entry.amount = finalAmount;
         entry.type = document.getElementById("editEntryType").value;
         entry.first_payment = document.getElementById("editEntryDate").value;
         entry.savings = 0;

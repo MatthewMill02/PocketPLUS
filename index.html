@@ -370,44 +370,41 @@
                         <label for="editEntryName" id="labelEditEntryName">Nazwa *</label>
                         <input type="text" id="editEntryName" class="form-input" required>
                     </div>
+                    <!-- Wiersz Typu (dla Transakcji i Subskrypcji) -->
                     <div class="form-group" id="groupEditType">
                         <label for="editEntryType">Typ</label>
                         <select id="editEntryType" class="form-select"></select>
                     </div>
-                    <div class="form-group" id="groupEditDebtType" style="display: none;">
-                        <label for="editEntryDebtType">Typ długu</label>
-                        <select id="editEntryDebtType" class="form-select">
-                            <option value="Dług u mnie">Dług u mnie</option>
-                            <option value="Dług u osoby">Dług u osoby</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="groupEditKind">
-                        <label>Rodzaj transakcji</label>
-                        <div class="flow-toggle-group">
-                            <button type="button" class="btn-flow active flow-expense" id="btnModalKindExpense">Wydatek (-)</button>
-                            <button type="button" class="btn-flow flow-income" id="btnModalKindIncome">Zysk (+)</button>
-                        </div>
-                    </div>
-                    <div class="modal-amount-savings-row">
-                        <div class="form-group flex-1">
+
+                    <!-- Wiersz: Kwota i Skarbonka (po lewej) + Rodzaj (po prawej) na równi w jednej linii -->
+                    <div class="modal-kind-amount-row" id="modalKindAmountRow">
+                        <div class="form-group flex-1" id="groupEditAmountWrapper">
                             <label for="editEntryAmount" id="labelEditEntryAmount">Kwota *</label>
-                            <input type="number" id="editEntryAmount" class="form-input" step="0.01" min="0.01" required>
+                            <div class="modal-amount-savings-inner">
+                                <input type="number" id="editEntryAmount" class="form-input" step="0.01" min="0.01" required>
+                                <div class="form-group-savings-inline" id="groupEditSavings">
+                                    <input type="checkbox" id="modalCheckSavings" class="checkbox-savings-only" title="Zaznacz, aby dopełnić kwotę do pełnej złotówki">
+                                    <input type="number" id="editEntrySavings" class="form-input" step="0.01" min="0" placeholder="0.00" disabled style="width: 75px;">
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group" id="groupEditSavings" style="width: 140px;">
-                            <label for="editEntrySavings" id="labelEditEntrySavings">Skarbonka</label>
-                            <div class="savings-input-group">
-                                <input type="checkbox" id="modalCheckSavings" class="checkbox-savings-only" title="Zaznacz, aby dopełnić kwotę do pełnej złotówki">
-                                <input type="number" id="editEntrySavings" class="form-input" step="0.01" min="0" placeholder="0.00" disabled style="width: 100%;">
+                        <div class="form-group flex-1" id="groupEditKind">
+                            <label id="labelEditEntryKind">Rodzaj transakcji</label>
+                            <div class="flow-toggle-group">
+                                <button type="button" class="btn-flow active flow-expense" id="btnModalKindExpense">Wydatek (-)</button>
+                                <button type="button" class="btn-flow flow-income" id="btnModalKindIncome">Zysk (+)</button>
                             </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="editEntryDate" id="labelEditEntryDate">Data</label>
-                        <input type="date" id="editEntryDate" class="form-input">
-                    </div>
-                    <div class="form-group" id="groupEditRepaymentDate" style="display: none;">
-                        <label for="editEntryRepaymentDate">Data spłaty (opcjonalnie)</label>
-                        <input type="date" id="editEntryRepaymentDate" class="form-input">
+                    <div class="modal-dates-row" id="modalDatesRow">
+                        <div class="form-group flex-1" id="groupEditDate">
+                            <label for="editEntryDate" id="labelEditEntryDate">Data</label>
+                            <input type="date" id="editEntryDate" class="form-input">
+                        </div>
+                        <div class="form-group flex-1" id="groupEditRepaymentDate" style="display: none;">
+                            <label for="editEntryRepaymentDate">Data spłaty (opcjonalnie)</label>
+                            <input type="date" id="editEntryRepaymentDate" class="form-input">
+                        </div>
                     </div>
                     <div id="entryEditError" class="form-error" style="display: none;"></div>
                 </div>
