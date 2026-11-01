@@ -259,6 +259,15 @@ function initEvents() {
         });
     }
 
+    // Zapewnienie widoczności pól formularza modalu na telefonie przy wysunięciu klawiatury ekranowej
+    document.querySelectorAll(".modal-body input, .modal-body select, .modal-body textarea").forEach(elem => {
+        elem.addEventListener("focus", () => {
+            setTimeout(() => {
+                elem.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 300);
+        });
+    });
+
     // Przycisk ustawień (zarządzanie typami)
     const btnSettingsModal = document.getElementById("btnSettingsModal");
     if (btnSettingsModal) {
@@ -438,17 +447,25 @@ function initEvents() {
         quickAddForm.addEventListener("submit", handleQuickAddSubmit);
     }
 
-    // Status synchronizacji
+    // Status synchronizacji (pop-up kolejki zadań)
     const btnSyncStatus = document.getElementById("btnSyncStatus");
     const syncQueuePanel = document.getElementById("syncQueuePanel");
+    const syncStatusWrapper = document.getElementById("syncStatusWrapper");
+
     if (btnSyncStatus && syncQueuePanel) {
-        btnSyncStatus.addEventListener("click", () => {
+        btnSyncStatus.addEventListener("click", (e) => {
+            e.stopPropagation();
             const isHidden = syncQueuePanel.style.display === "none";
-            syncQueuePanel.style.display = isHidden ? "block" : "none";
+            if (isHidden) {
+                updateSyncStatusBadge();
+                syncQueuePanel.style.display = "block";
+            } else {
+                syncQueuePanel.style.display = "none";
+            }
         });
     }
 
-    // Zamknięcie menu 3 kropek w tabeli po kliknięciu poza obszarem menu
+    // Zamknięcie menu 3 kropek w tabeli oraz pop-upu synchronizacji po kliknięciu poza obszarem
     document.addEventListener("click", (e) => {
         if (!e.target.closest(".row-actions-dropdown")) {
             document.querySelectorAll(".row-actions-menu").forEach(m => {
@@ -457,6 +474,10 @@ function initEvents() {
             document.querySelectorAll(".btn-row-more").forEach(b => {
                 b.classList.remove("is-active");
             });
+        }
+
+        if (syncQueuePanel && syncStatusWrapper && !syncStatusWrapper.contains(e.target)) {
+            syncQueuePanel.style.display = "none";
         }
     });
 }

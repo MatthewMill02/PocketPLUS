@@ -57,11 +57,6 @@ function openDashboardScreen(dbId = "transactions") {
     state.infiniteScroll.isLoadingMore = false;
     renderTransactionsTable();
     updateDashboardStats();
-
-    // Pobranie danych ze skryptu w chmurze jeśli użytkownik jest uwierzytelniony
-    if (state.isAdmin) {
-        fetchTransactionsFromBackend(false);
-    }
 }
 
 function getCurrentDbList() {
@@ -255,6 +250,11 @@ async function checkInitialData() {
         if (cachedDebts) { try { state.debts = JSON.parse(cachedDebts); } catch (e) {} }
         const cachedSubs = localStorage.getItem(CACHE_KEYS.SUBSCRIPTIONS_REAL);
         if (cachedSubs) { try { state.subscriptions = JSON.parse(cachedSubs); } catch (e) {} }
+
+        // Jeśli brakuje danych w pamięci podręcznej przy starcie, pobieramy je z chmury raz na starcie
+        if (!cachedTrans || !cachedDebts || !cachedSubs) {
+            fetchAllDatabasesFromBackend(false);
+        }
     } else {
         await reloadFakeData();
     }
@@ -363,13 +363,8 @@ function parseCsvSubscriptions(csv) {
 function updateDashboardStats() {
     const balanceElem = document.getElementById("statAccountBalance");
     const bufferElem = document.getElementById("statFinancialBuffer");
-    const scopeBadge = document.getElementById("statsScopeBadge");
 
     if (!balanceElem || !bufferElem) return;
-
-    if (scopeBadge) {
-        scopeBadge.textContent = state.currentDb === "debts" ? "Długi" : (state.currentDb === "subscriptions" ? "Subskrypcje" : "Transakcje");
-    }
 
     const statsDivider = document.getElementById("statsDivider");
     const statsMonthsBlock = document.getElementById("statsMonthsBlock");
@@ -449,7 +444,7 @@ function updateDashboardStats() {
 
             cardToMe.innerHTML = `
                 <div class="stats-month-cat-header">
-                    <span class="stats-month-cat-title">Długi u mnie</span>
+                    <span class="stats-month-cat-title">Dłużni u mnie</span>
                     <span class="stats-month-cat-total" style="color: #56d364;">+${unpaidToMe.toFixed(2)} zł</span>
                 </div>
                 <div class="stats-month-subitems">
@@ -458,7 +453,7 @@ function updateDashboardStats() {
             `;
             statsMonthsBlock.appendChild(cardToMe);
 
-            // Kategoria 2: Długi u osoby (ja komuś wiszę)
+            // Kategoria 2: Dług u osoby (ja komuś wiszę)
             const cardToOthers = document.createElement("div");
             cardToOthers.className = "stats-month-category";
             const personsToOthersKeys = Object.keys(personsToOthers);
@@ -586,7 +581,7 @@ function updateDashboardStats() {
 
     // 1. Stan konta: suma wszystkich transakcji
     let totalBalance = 0;
-    // 2. Poduszka finansowa: suma transakcji o typie "Oszczędności"
+    // 2. Poduszka finansowa: suma transakcji o typie "Oszczędności" + suma skarbonek ze wszystkich transakcji
     let financialBuffer = 0;
 
     const list = state.transactions;
@@ -597,12 +592,17 @@ function updateDashboardStats() {
         if ((t.type || "").toLowerCase() === "oszczędności") {
             financialBuffer += Math.abs(amt);
         }
+        const sav = parseFloat(t.savings) || 0;
+        if (sav > 0) {
+            financialBuffer += Math.abs(sav);
+        }
     });
 
     balanceElem.textContent = (totalBalance >= 0 ? "+" : "") + totalBalance.toFixed(2) + " zł";
     balanceElem.className = "stats-kpi-val " + (totalBalance >= 0 ? "positive" : "negative");
 
     bufferElem.textContent = financialBuffer.toFixed(2) + " zł";
+    bufferElem.className = "stats-kpi-val savings";
 
     // 3. Stany na 3 kolejne miesiące (bieżący M0, M-1, M-2) - rozwinięte na kategorie
     if (statsMonthsBlock) {
@@ -628,6 +628,7 @@ function updateDashboardStats() {
             if (typesKeys.length === 0 && m.piggyBank === 0) {
                 subitemsHtml = `<div class="stats-month-empty">Brak transakcji w tym miesiącu</div>`;
             } else {
+                // 1. Nad linią: kategorie odwzorowujące stan konta głównego (szare etykiety z czerwonymi/zielonymi wartościami)
                 typesKeys.forEach(typeName => {
                     const amt = m.byType[typeName];
                     const subSign = amt >= 0 ? "+" : "";
@@ -640,13 +641,30 @@ function updateDashboardStats() {
                     `;
                 });
 
-                if (m.piggyBank > 0) {
-                    subitemsHtml += `
-                        <div class="stats-month-subrow" style="border-top: 1px dashed rgba(88, 166, 255, 0.25); padding-top: 4px; margin-top: 2px;">
-                            <span class="stats-month-sublabel" style="color: #58a6ff; font-weight: 500;">Skarbonka</span>
-                            <span class="stats-month-subval" style="color: #58a6ff;">+${m.piggyBank.toFixed(2)} zł</span>
-                        </div>
-                    `;
+                // 2. Pod linią: odzwierciedlenie stanu poduszki finansowej (zawsze na niebiesko)
+                const hasSavingsBuffer = m.savingsBuffer > 0;
+                const hasPiggyBank = m.piggyBank > 0;
+
+                if (hasSavingsBuffer || hasPiggyBank) {
+                    subitemsHtml += `<div class="stats-month-divider-buffer"></div>`;
+
+                    if (hasSavingsBuffer) {
+                        subitemsHtml += `
+                            <div class="stats-month-subrow stats-month-subrow-buffer">
+                                <span class="stats-month-sublabel" style="color: #58a6ff; font-weight: 500;">Oszczędności</span>
+                                <span class="stats-month-subval" style="color: #58a6ff;">+${m.savingsBuffer.toFixed(2)} zł</span>
+                            </div>
+                        `;
+                    }
+
+                    if (hasPiggyBank) {
+                        subitemsHtml += `
+                            <div class="stats-month-subrow stats-month-subrow-buffer">
+                                <span class="stats-month-sublabel" style="color: #58a6ff; font-weight: 500;">Skarbonka</span>
+                                <span class="stats-month-subval" style="color: #58a6ff;">+${m.piggyBank.toFixed(2)} zł</span>
+                            </div>
+                        `;
+                    }
                 }
             }
 
@@ -682,6 +700,7 @@ function getMonthlyStats(transactions, year, month) {
     ];
     let total = 0;
     let piggyBank = 0;
+    let savingsBuffer = 0;
     const byType = {};
 
     transactions.forEach(t => {
@@ -700,6 +719,10 @@ function getMonthlyStats(transactions, year, month) {
                 byType[typeKey] = 0;
             }
             byType[typeKey] += amt;
+
+            if (typeKey.toLowerCase() === "oszczędności") {
+                savingsBuffer += Math.abs(amt);
+            }
         }
     });
 
@@ -707,6 +730,7 @@ function getMonthlyStats(transactions, year, month) {
         name: `${monthNames[month]} ${year}`,
         total: total,
         piggyBank: piggyBank,
+        savingsBuffer: savingsBuffer,
         byType: byType
     };
 }
@@ -892,7 +916,7 @@ function renderTransactionsTable() {
                 let rowClass = isIncome ? "row-income" : "row-expense";
                 if (isSavingsType) rowClass = "row-savings";
 
-                // Formatowanie kwoty oraz oszczędności
+                // Formatowanie kwoty oraz oszczędności (skarbonki)
                 let amountHtml = "";
                 const baseAmount = Number(t.amount || 0);
                 const sav = Number(t.savings || 0);
@@ -907,19 +931,19 @@ function renderTransactionsTable() {
                         amountHtml = `<span class="amount-cell amount-savings-blue">+${absVal.toFixed(2)} zł</span>`;
                     }
                     if (sav > 0) {
-                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">+${sav.toFixed(2)} zł</span>`;
+                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">-${sav.toFixed(2)} zł</span>`;
                     }
                 } else if (!isIncome) {
                     // Zwykły wydatek (z ewentualną końcówką do skarbonki)
                     amountHtml = `<span class="amount-cell amount-expense">-${Math.abs(baseAmount).toFixed(2)} zł</span>`;
                     if (sav > 0) {
-                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">+${sav.toFixed(2)} zł</span>`;
+                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">-${sav.toFixed(2)} zł</span>`;
                     }
                 } else {
                     // Zwykły przychód (z ewentualną skarbonką)
                     amountHtml = `<span class="amount-cell amount-income">+${baseAmount.toFixed(2)} zł</span>`;
                     if (sav > 0) {
-                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">+${sav.toFixed(2)} zł</span>`;
+                        amountHtml += `<span class="amount-savings-blue" style="margin-left: 6px; font-size: 14px; font-weight: bold;" title="Skarbonka">-${sav.toFixed(2)} zł</span>`;
                     }
                 }
 
@@ -1164,32 +1188,31 @@ function handleConvertDebtToTransaction(debt) {
     }
 
     const rawAmt = Math.abs(parseFloat(debt.amount) || 0);
-    const loanDate = debt.loan_date || new Date().toISOString().split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
 
     // "Dług u mnie" to pożyczenie komuś pieniędzy (wydatek -) lub spłata (zysk +),
     // domyślnie przy pożyczce pieniądze od nas wyszły, więc wydatek:
     const isExpense = debt.debt_type === "Dług u mnie" ? true : false;
 
-    // Przełączamy widok na transakcje
-    openDashboardScreen("transactions");
-
-    // Otwieramy pop-up dodania nowego wpisu z prefillem
+    // Otwieramy pop-up dodania nowego wpisu transakcji na stronie długów (pozostając na długach)
     openEntryEditModal(null, {
         name: combinedName,
         amount: rawAmt,
-        date: loanDate,
-        type: "Codzienny",
-        isExpense: isExpense
+        date: todayStr,
+        type: "Transakcje",
+        isExpense: isExpense,
+        targetDb: "transactions"
     });
 }
 
 /**
  * Specjalna mechanika subskrypcji / stałych kosztów:
- * Po kliknięciu 'Zapisz transakcję' w tabeli subskrypcji, przełączamy bazę na transakcje
- * i otwieramy pop-up dodania nowego wpisu z prefillem (Nazwa usługi, Koszt, Kategoria, dzisiejsza data).
- * Po zapisaniu transakcji aktualizujemy 'last_payment' w subskrypcji na wybraną datę.
+ * Po kliknięciu 'Zapisz transakcję' w tabeli subskrypcji, otwieramy pop-up dodania nowego wpisu transakcji
+ * na stronie subskrypcji z prefillem (Nazwa usługi, Koszt, Kategoria, dzisiejsza data).
+ * Po zapisaniu transakcji pozostajemy na subskrypcjach i aktualizujemy 'last_payment'.
  */
 let pendingSubscriptionSource = null;
+let pendingTargetDb = null;
 
 function handleConvertSubscriptionToTransaction(subscription) {
     if (!subscription) return;
@@ -1203,16 +1226,14 @@ function handleConvertSubscriptionToTransaction(subscription) {
         id: subscription.id
     };
 
-    // Przełączamy widok na transakcje
-    openDashboardScreen("transactions");
-
-    // Otwieramy pop-up dodania nowego wpisu z prefillem
+    // Otwieramy pop-up dodania nowego wpisu transakcji na stronie subskrypcji (pozostając na subskrypcjach)
     openEntryEditModal(null, {
         name: subName,
         amount: rawAmt,
         date: todayStr,
         type: subType,
-        isExpense: true
+        isExpense: true,
+        targetDb: "transactions"
     });
 }
 
@@ -1303,7 +1324,10 @@ function openEntryEditModal(id = null, prefillData = null) {
     const groupKind = document.getElementById("groupEditKind");
     const labelEditKind = document.getElementById("labelEditEntryKind");
 
-    if (state.currentDb === "debts") {
+    const effectiveDb = (isNew && prefillData && prefillData.targetDb) ? prefillData.targetDb : state.currentDb;
+    pendingTargetDb = (isNew && prefillData && prefillData.targetDb) ? prefillData.targetDb : null;
+
+    if (effectiveDb === "debts") {
         if (groupPerson) groupPerson.style.display = "block";
         if (editEntryPerson && !isNew) editEntryPerson.value = entry.person || "";
         
@@ -1325,10 +1349,10 @@ function openEntryEditModal(id = null, prefillData = null) {
 
         const isDebtToMe = isNew ? true : ((entry.debt_type || "").trim() === "Dług u mnie");
         if (btnModalKindExpense && btnModalKindIncome) {
-            btnModalKindExpense.className = "btn-flow " + (isDebtToMe ? "active flow-expense" : "");
-            btnModalKindIncome.className = "btn-flow " + (!isDebtToMe ? "active flow-income" : "");
+            btnModalKindExpense.className = "btn-flow flow-expense" + (isDebtToMe ? " active" : "");
+            btnModalKindIncome.className = "btn-flow flow-income" + (!isDebtToMe ? " active" : "");
         }
-    } else if (state.currentDb === "subscriptions") {
+    } else if (effectiveDb === "subscriptions") {
         if (groupPerson) groupPerson.style.display = "none";
         if (groupDebtType) groupDebtType.style.display = "none";
         if (groupRepaymentDate) groupRepaymentDate.style.display = "none";
@@ -1347,8 +1371,8 @@ function openEntryEditModal(id = null, prefillData = null) {
 
         const isSubExpense = isNew ? true : (Number(entry.amount || 0) <= 0);
         if (btnModalKindExpense && btnModalKindIncome) {
-            btnModalKindExpense.className = "btn-flow " + (isSubExpense ? "active flow-expense" : "");
-            btnModalKindIncome.className = "btn-flow " + (!isSubExpense ? "active flow-income" : "");
+            btnModalKindExpense.className = "btn-flow flow-expense" + (isSubExpense ? " active" : "");
+            btnModalKindIncome.className = "btn-flow flow-income" + (!isSubExpense ? " active" : "");
         }
     } else {
         // Transakcje
@@ -1367,8 +1391,8 @@ function openEntryEditModal(id = null, prefillData = null) {
         if (btnModalKindIncome) btnModalKindIncome.textContent = "Zysk (+)";
 
         if (btnModalKindExpense && btnModalKindIncome) {
-            btnModalKindExpense.className = "btn-flow " + (isExpense ? "active flow-expense" : "");
-            btnModalKindIncome.className = "btn-flow " + (!isExpense ? "active flow-income" : "");
+            btnModalKindExpense.className = "btn-flow flow-expense" + (isExpense ? " active" : "");
+            btnModalKindIncome.className = "btn-flow flow-income" + (!isExpense ? " active" : "");
         }
 
         if (groupSavings) groupSavings.style.display = "flex";
@@ -1376,11 +1400,10 @@ function openEntryEditModal(id = null, prefillData = null) {
 
     const labelEditAmount = document.getElementById("labelEditEntryAmount");
     if (labelEditAmount) {
-        labelEditAmount.textContent = (state.currentDb === "subscriptions") ? "Koszt *" : "Kwota *";
+        labelEditAmount.textContent = (effectiveDb === "subscriptions") ? "Koszt *" : "Kwota *";
     }
 
     if (modal) modal.style.display = "flex";
-    if (editEntryName) editEntryName.focus();
 }
 
 function handleEntryEditSubmit(e) {
@@ -1388,7 +1411,8 @@ function handleEntryEditSubmit(e) {
 
     const idVal = document.getElementById("editEntryId").value;
     const isNew = !idVal;
-    const list = getCurrentDbList();
+    const targetDb = pendingTargetDb || state.currentDb;
+    const list = (targetDb === "transactions") ? state.transactions : ((targetDb === "debts") ? state.debts : state.subscriptions);
 
     const name = document.getElementById("editEntryName").value.trim();
     const rawAmount = Math.abs(parseFloat(document.getElementById("editEntryAmount").value) || 0);
@@ -1409,7 +1433,7 @@ function handleEntryEditSubmit(e) {
         const newId = list.reduce((max, t) => Math.max(max, Number(t.id) || 0), 0) + 1;
         let newRecord = null;
 
-        if (state.currentDb === "debts") {
+        if (targetDb === "debts") {
             const debtTypeVal = isExpense ? "Dług u mnie" : "Dług u osoby";
             newRecord = {
                 id: newId,
@@ -1421,7 +1445,7 @@ function handleEntryEditSubmit(e) {
                 repayment_date: document.getElementById("editEntryRepaymentDate").value || "",
                 update: todayStr
             };
-        } else if (state.currentDb === "subscriptions") {
+        } else if (targetDb === "subscriptions") {
             newRecord = {
                 id: newId,
                 name: name,
@@ -1443,13 +1467,27 @@ function handleEntryEditSubmit(e) {
         }
 
         list.unshift(newRecord);
-        saveCurrentDbToCache();
+
+        // Zapisujemy bazę docelową do cache
+        if (targetDb === "transactions") {
+            const cachedTransactions = localStorage.getItem(CACHE_KEYS.TRANSACTIONS_REAL);
+            if (cachedTransactions || state.isAdmin) {
+                try {
+                    localStorage.setItem(CACHE_KEYS.TRANSACTIONS_REAL, JSON.stringify(state.transactions));
+                } catch (err) {}
+            }
+        } else {
+            saveCurrentDbToCache();
+        }
+
+        // Odświeżamy tabelę i statystyki
         renderTransactionsTable();
+        updateDashboardStats();
         closeModal("entryEditModal");
 
         enqueueSyncTask({
-            type: "add" + capitalize(state.currentDb),
-            db: state.currentDb,
+            type: "add" + capitalize(targetDb),
+            db: targetDb,
             data: newRecord
         });
 
@@ -1472,8 +1510,10 @@ function handleEntryEditSubmit(e) {
                     id: subId,
                     data: subEntry
                 });
+                renderTransactionsTable();
             }
         }
+        pendingTargetDb = null;
         return;
     }
 
@@ -1734,7 +1774,9 @@ function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-async function fetchTransactionsFromBackend(showSkeleton = false) {
+async function fetchAllDatabasesFromBackend(showSkeleton = false) {
+    if (!state.isAdmin || !state.adminPassword) return;
+
     const skeleton = document.getElementById("tableSkeleton");
     const table = document.getElementById("transactionsTable");
 
@@ -1743,33 +1785,37 @@ async function fetchTransactionsFromBackend(showSkeleton = false) {
         if (table) table.style.display = "none";
     }
 
-    const actionMap = {
-        transactions: "getTransactions",
-        debts: "getDebts",
-        subscriptions: "getSubscriptions"
-    };
-
     try {
-        const res = await callBackendJsonp({
-            action: actionMap[state.currentDb] || "getTransactions",
-            pass: state.adminPassword
-        });
+        const [transRes, debtsRes, subsRes, typesRes] = await Promise.all([
+            callBackendJsonp({ action: "getTransactions", pass: state.adminPassword }),
+            callBackendJsonp({ action: "getDebts", pass: state.adminPassword }),
+            callBackendJsonp({ action: "getSubscriptions", pass: state.adminPassword }),
+            callBackendJsonp({ action: "getTypes", pass: state.adminPassword })
+        ]);
 
-        if (res && res.status === "success" && Array.isArray(res.data)) {
-            setCurrentDbList(res.data);
-            saveCurrentDbToCache();
-            renderTransactionsTable();
+        if (transRes && transRes.status === "success" && Array.isArray(transRes.data)) {
+            state.transactions = transRes.data;
+            try { localStorage.setItem(CACHE_KEYS.TRANSACTIONS_REAL, JSON.stringify(state.transactions)); } catch (e) {}
         }
 
-        // Pobranie typów przy okazji
-        const typesRes = await callBackendJsonp({
-            action: "getTypes",
-            pass: state.adminPassword
-        });
+        if (debtsRes && debtsRes.status === "success" && Array.isArray(debtsRes.data)) {
+            state.debts = debtsRes.data;
+            try { localStorage.setItem(CACHE_KEYS.DEBTS_REAL, JSON.stringify(state.debts)); } catch (e) {}
+        }
+
+        if (subsRes && subsRes.status === "success" && Array.isArray(subsRes.data)) {
+            state.subscriptions = subsRes.data;
+            try { localStorage.setItem(CACHE_KEYS.SUBSCRIPTIONS_REAL, JSON.stringify(state.subscriptions)); } catch (e) {}
+        }
+
         if (typesRes && typesRes.status === "success" && Array.isArray(typesRes.data)) {
             state.types = typesRes.data;
             populateTypeDropdowns();
         }
+
+        populatePersonDatalist();
+        renderTransactionsTable();
+        updateDashboardStats();
     } catch (err) {
         console.warn("Brak połączenia z chmurą Google Sheets, działanie w trybie lokalnym offline.", err);
     } finally {
@@ -1778,4 +1824,8 @@ async function fetchTransactionsFromBackend(showSkeleton = false) {
             if (table) table.style.display = "table";
         }
     }
+}
+
+async function fetchTransactionsFromBackend(showSkeleton = false) {
+    await fetchAllDatabasesFromBackend(showSkeleton);
 }

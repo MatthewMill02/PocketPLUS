@@ -34,34 +34,37 @@
             </div>
         </div>
 
-        <div class="header-right">
-            <!-- PRZYCISK DODAJ REKORD PRZY PRAWEJ KRAWĘDZI -->
+        <div class="header-center">
+            <!-- PRZYCISK DODAJ REKORD NA ŚRODKU BELKI -->
             <button type="button" id="btnHeaderAddEntry" class="btn-header-add" title="Dodaj nowy rekord">
                 + Dodaj rekord
             </button>
+        </div>
+
+        <div class="header-right">
 
             <!-- Wersja desktopowa przycisków akcji -->
             <div class="desktop-header-actions">
                 <button id="btnSettingsModal" class="action-btn" style="display: none;" title="Zarządzaj słownikami i typami">[Ustawienia]</button>
                 <button id="btnRefreshData" class="action-btn" title="Pobierz najświeższe dane ze skryptu">[Odśwież]</button>
                 <button id="btnAdminLoginModal" class="action-btn" title="Wpisz hasło do synchronizacji">[Dostęp]</button>
+            </div>
 
-                <!-- Wskaźnik stanu synchronizacji i kolejki zadań w tle -->
-                <div id="syncStatusWrapper" class="sync-status-wrapper" style="display: none;">
-                    <button id="btnSyncStatus" class="sync-status-btn" title="Kolejka synchronizacji w chmurze">
-                        <img id="syncStatusImg" src="assets/sync.png" alt="Status synchronizacji" class="sync-icon-img">
-                    </button>
-                    <button id="btnLogoutAdmin" class="logout-btn" title="Wyloguj">[Wyloguj]</button>
+            <!-- Wskaźnik stanu synchronizacji i kolejki zadań w tle (widoczny na telefonie i komputerze po prawej stronie belki) -->
+            <div id="syncStatusWrapper" class="sync-status-wrapper">
+                <button id="btnSyncStatus" class="sync-status-btn" title="Kolejka synchronizacji w chmurze">
+                    <img id="syncStatusImg" src="assets/sync.png" alt="Status synchronizacji" class="sync-icon-img">
+                </button>
+                <button id="btnLogoutAdmin" class="logout-btn desktop-only" title="Wyloguj">[Wyloguj]</button>
 
-                    <!-- Panel kolejki synchronizacji -->
-                    <div id="syncQueuePanel" class="sync-queue-panel" style="display: none;">
-                        <div class="sync-queue-header">
-                            <h4>Synchronizacja w tle</h4>
-                            <span id="syncQueueCount" class="queue-count-badge">0 zadań</span>
-                        </div>
-                        <div id="syncQueueList" class="sync-queue-list">
-                            <p class="queue-empty-msg">Wszystkie dane są zsynchronizowane.</p>
-                        </div>
+                <!-- Panel kolejki synchronizacji -->
+                <div id="syncQueuePanel" class="sync-queue-panel" style="display: none;">
+                    <div class="sync-queue-header">
+                        <h4>Synchronizacja w tle</h4>
+                        <span id="syncQueueCount" class="queue-count-badge">0 zadań</span>
+                    </div>
+                    <div id="syncQueueList" class="sync-queue-list">
+                        <p class="queue-empty-msg">Wszystkie dane są zsynchronizowane.</p>
                     </div>
                 </div>
             </div>
@@ -161,7 +164,6 @@
                 <div class="stats-card-panel">
                     <div class="stats-card-header">
                         <h3 id="statsCardTitle">Podsumowanie</h3>
-                        <span id="statsScopeBadge" class="stats-badge-tag">Wszystko</span>
                     </div>
 
                     <!-- Stan konta -->
@@ -429,7 +431,7 @@
             </div>
             <div class="modal-body">
                 <div class="add-type-inline-form">
-                    <input type="text" id="newTypeNameInput" class="form-input" placeholder="Wpisz nowy typ (np. Zdrowie, Samochód)">
+                    <input type="text" id="newTypeNameInput" class="form-input" autocomplete="off">
                     <button type="button" id="btnAddNewType" class="btn-primary" style="white-space: nowrap;">[+] Dodaj typ</button>
                 </div>
                 <div id="newTypeError" class="form-error" style="display: none; margin-top: 6px;"></div>
@@ -465,7 +467,7 @@
     <!-- STOPKA -->
     <footer class="app-footer" id="appFooter">
         <div class="footer-content">
-            <span>&copy; PocketPLUS | wersja 1.1</span>
+            <span>&copy; PocketPLUS | wersja 1.2</span>
         </div>
     </footer>
 

@@ -230,6 +230,16 @@
     font-weight: 600;
 }
 
+.stats-month-divider-buffer {
+    height: 1px;
+    background-color: rgba(88, 166, 255, 0.25);
+    margin: 4px 0;
+}
+
+.stats-month-subrow-buffer {
+    background-color: rgba(88, 166, 255, 0.04);
+}
+
 /* Wskaźnik braku wpisów w danym miesiącu */
 .stats-month-empty {
     font-size: 14px;
@@ -348,6 +358,7 @@
 }
 
 .btn-toggle-filters {
+    display: none; /* Domyślnie ukryty na komputerze/laptopie */
     height: 38px;
     width: 38px;
     background-color: rgba(17, 20, 24, 0.8);
@@ -357,7 +368,6 @@
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: all var(--transition-fast);
@@ -375,10 +385,6 @@
     align-items: flex-end;
     flex-wrap: wrap;
     transition: max-height 0.2s ease, opacity 0.2s ease;
-}
-
-.control-actions-inline.is-collapsed {
-    display: none !important;
 }
 
 .control-field-group {

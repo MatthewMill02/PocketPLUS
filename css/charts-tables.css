@@ -667,6 +667,14 @@
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
+    /* Na wierszu długu mamy 3 linie: Osoba (title), Nazwa długu (subtitle), Typ długu (type) */
+    .pocket-table tr:has(.td-person) {
+        grid-template-areas:
+            "title    amount date"
+            "subtitle amount actions"
+            "type     amount actions";
+    }
+
     .pocket-table tr.row-expense {
         border-left: 3px solid #ff7b72;
     }
@@ -694,18 +702,37 @@
     /* 2. Nazwa wpisu i osoba: lewa góra */
     .pocket-table td.td-name,
     .pocket-table td.td-person {
-        grid-area: title;
         font-size: 14px;
         font-weight: 600;
         color: var(--color-text-main);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 150px;
+        max-width: 170px;
+    }
+
+    .pocket-table td.td-person {
+        grid-area: title;
+    }
+
+    .pocket-table td.td-name {
+        grid-area: title;
+    }
+
+    /* Na wierszach długu (posiadających osobę) nazwa długu trafia pod osobę */
+    .pocket-table tr:has(.td-person) td.td-person {
+        grid-area: title;
     }
 
     .pocket-table tr:has(.td-person) td.td-name {
-        display: none !important;
+        grid-area: subtitle;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 170px;
     }
 
     /* 3. Typ wpisu: idzie POD nazwę */

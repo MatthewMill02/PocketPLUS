@@ -1,4 +1,4 @@
-# PocketPLUS (wersja 1.1)
+# PocketPLUS (wersja 1.2)
 
 Prosta i przejrzysta aplikacja internetowa do rejestrowania i zarządzania codziennym budżetem, wydatkami, długami oraz subskrypcjami.
 
@@ -7,6 +7,26 @@ Prosta i przejrzysta aplikacja internetowa do rejestrowania i zarządzania codzi
 - **Hosting**: GitHub Pages.
 - **Baza danych & Backend**: Arkusze Google (Google Spreadsheets) za pośrednictwem skryptu Google Apps Script udostępniającego API przez protokół JSONP.
 - **Autoryzacja**: Hasło dostępu konfigurowane we właściwościach skryptu Google Apps Script (`Script Properties`).
+
+## Nowości w wersji 1.2
+- **Dopracowanie filtrów na komputerach i telefonach**:
+  - Na komputerach/laptopach filtry (Typ i Sortowanie) są zawsze widoczne, a przycisk zwijania został ukryty.
+  - Na urządzeniach mobilnych filtry są domyślnie schowane i rozwijane przyciskiem `>`, co oszczędza cenne miejsce na ekranie.
+- **Dwuwarstwowa prezentacja Oszczędności i Skarbonki w podsumowaniach miesięcznych**:
+  - Nad linią: kategorie odzwierciedlające stan konta głównego (z czerwonymi/zielonymi kwotami),
+  - Pod linią: niebieskie pozycje Oszczędności oraz Skarbonka odzwierciedlające stan i wkład do poduszki finansowej.
+- **Formatowanie skarbonki w transakcjach**: Wartość skarbonki przy wygenerowanych transakcjach wyświetla się ze znakiem minus w kolorze niebieskim (np. `-38.90 zł -0.10 zł`).
+- **Płynne działanie i optymalizacja ładowania danych**:
+  - Szybkie przełączanie zakładek działa wyłącznie na danych w pamięci lokalnej (bez niepotrzebnego ponownego odpytywania sieci w trakcie nawigacji),
+  - Pełne odświeżenie danych następuje tylko po użyciu opcji `[Odśwież dane]` lub `F5`.
+- **Wskaźnik i pop-up synchronizacji**:
+  - Ikona synchronizacji jest stale dostępna po prawej stronie belki górnej,
+  - Kliknięcie wyświetla okno pop-up z listą oczekujących zadań lub czytelnym komunikatem o pełnej synchronizacji.
+- **Usprawnienia mobilne**:
+  - Usunięcie autofokusu otwierającego klawiaturę przy wejściu do modalu edycji,
+  - Podnoszenie modalu i automatyczne dosuwanie aktywnego pola nad wysuniętą klawiaturę ekranową,
+  - Pełna widoczność pól "Osoba" oraz "Nazwa" na kafelkach długów,
+  - Stopka dostępna od razu na ekranie powitalnym bez konieczności przewijania strony.
 
 ## Nowości w wersji 1.1
 - **Menu akcji wiersza (3 kropki)**: Opcje edycji oraz konwersji do transakcji zostały przeniesione pod minimalistyczne menu `•••` w każdym wierszu tabeli.

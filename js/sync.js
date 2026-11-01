@@ -36,30 +36,61 @@ function updateSyncStatusBadge() {
     const queueList = document.getElementById("syncQueueList");
     const syncImg = document.getElementById("syncStatusImg");
 
-    if (!state.isAdmin) {
-        if (wrapper) wrapper.style.display = "none";
-        return;
-    }
-
     if (wrapper) wrapper.style.display = "flex";
 
     const pending = state.syncQueue.filter(t => t.status === "pending" || t.status === "in_progress");
-    if (countBadge) countBadge.textContent = `${pending.length} zadań`;
+    if (countBadge) countBadge.textContent = `${pending.length} w kolejce`;
 
     if (syncImg) {
         syncImg.src = state.isSyncing ? "assets/sync.gif" : "assets/sync.png";
     }
 
     if (queueList) {
-        if (state.syncQueue.length === 0) {
-            queueList.innerHTML = '<p class="queue-empty-msg">Wszystkie zmiany są zsynchronizowane.</p>';
-        } else {
-            queueList.innerHTML = state.syncQueue.slice(-6).map(q => `
-                <div class="queue-item status-${q.status}">
-                    <span>${escapeHtml(q.task.type)} (${escapeHtml(q.task.data ? q.task.data.name : 'ID ' + q.task.id)})</span>
-                    <small>${escapeHtml(q.status)}</small>
+        if (!state.syncQueue || state.syncQueue.length === 0) {
+            queueList.innerHTML = `
+                <div class="queue-empty-box">
+                    <span class="queue-empty-dash">-</span>
+                    <p class="queue-empty-msg">Brak elementów w kolejce do synchronizacji</p>
+                    <span class="queue-empty-sub">Wszystkie dane są aktualne</span>
                 </div>
-            `).join("");
+            `;
+        } else {
+            const statusLabels = {
+                pending: "Oczekuje",
+                in_progress: "Wysyłanie...",
+                completed: "Zsynchronizowano",
+                failed: "Błąd",
+                error: "Błąd połączenia"
+            };
+
+            const typeLabels = {
+                addTransactions: "Dodanie transakcji",
+                editTransaction: "Edycja transakcji",
+                deleteTransaction: "Usunięcie transakcji",
+                addDebts: "Dodanie długu",
+                editDebt: "Edycja długu",
+                deleteDebt: "Usunięcie długu",
+                addSubscriptions: "Dodanie subskrypcji",
+                editSubscription: "Edycja subskrypcji",
+                deleteSubscription: "Usunięcie subskrypcji",
+                addType: "Nowy typ",
+                deleteType: "Usunięcie typu"
+            };
+
+            queueList.innerHTML = state.syncQueue.map(q => {
+                const label = typeLabels[q.task.type] || q.task.type;
+                const detail = q.task.data && q.task.data.name ? q.task.data.name : (q.task.name ? q.task.name : (q.task.id ? `ID #${q.task.id}` : ''));
+                const statusText = statusLabels[q.status] || q.status;
+                return `
+                    <div class="queue-item status-${q.status}">
+                        <div class="queue-item-info">
+                            <span class="queue-item-name">${escapeHtml(label)}</span>
+                            ${detail ? `<span class="queue-item-detail">${escapeHtml(detail)}</span>` : ''}
+                        </div>
+                        <span class="queue-item-status queue-status-${q.status}">${escapeHtml(statusText)}</span>
+                    </div>
+                `;
+            }).join("");
         }
     }
 }

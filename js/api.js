@@ -114,15 +114,18 @@ async function logoutAdmin() {
 function updateAdminUi() {
     const btnAdminModal = document.getElementById("btnAdminLoginModal");
     const btnSettings = document.getElementById("btnSettingsModal");
+    const btnLogoutAdmin = document.getElementById("btnLogoutAdmin");
     const syncWrapper = document.getElementById("syncStatusWrapper");
+
+    if (syncWrapper) syncWrapper.style.display = "flex";
 
     if (state.isAdmin) {
         if (btnAdminModal) btnAdminModal.style.display = "none";
         if (btnSettings) btnSettings.style.display = "inline-block";
-        if (syncWrapper) syncWrapper.style.display = "flex";
+        if (btnLogoutAdmin) btnLogoutAdmin.style.display = "inline-flex";
     } else {
         if (btnAdminModal) btnAdminModal.style.display = "inline-block";
         if (btnSettings) btnSettings.style.display = "none";
-        if (syncWrapper) syncWrapper.style.display = "none";
+        if (btnLogoutAdmin) btnLogoutAdmin.style.display = "none";
     }
 }
