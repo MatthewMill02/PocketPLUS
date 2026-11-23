@@ -64,6 +64,18 @@ body::before {
     transition: filter var(--transition-normal);
 }
 
+/* Wariant niebieski dla bazy oszczędności - dedykowany plik background4.png */
+body.theme-savings::before {
+    background-image: url('../assets/background4.png');
+    filter: none;
+}
+
+/* Wariant bordowy dla bazy inwestycji - dedykowany plik background5.png */
+body.theme-investments::before {
+    background-image: url('../assets/background5.png');
+    filter: none;
+}
+
 /* Wariant fioletowy dla bazy długów (Marco) - dedykowany plik background2.png */
 body.theme-debts::before {
     background-image: url('../assets/background2.png');

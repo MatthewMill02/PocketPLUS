@@ -10,8 +10,8 @@ function openDashboardScreen(dbId = "transactions") {
 
     const dbConfig = DATABASES[dbId] || DATABASES.transactions;
 
-    // Resetowanie motywu tła i nałożenie właściwego (fioletowy dla Marco, czerwony dla Manhattan)
-    document.body.classList.remove("theme-debts", "theme-subscriptions");
+    // Resetowanie motywu tła i nałożenie właściwego (fioletowy dla Marco, czerwony dla Manhattan, niebieski dla Oszczędności, bordowy dla Inwestycji)
+    document.body.classList.remove("theme-debts", "theme-subscriptions", "theme-savings", "theme-investments");
     if (dbConfig.themeClass) {
         document.body.classList.add(dbConfig.themeClass);
     }
@@ -62,12 +62,16 @@ function openDashboardScreen(dbId = "transactions") {
 function getCurrentDbList() {
     if (state.currentDb === "debts") return state.debts;
     if (state.currentDb === "subscriptions") return state.subscriptions;
+    if (state.currentDb === "savings") return state.savings;
+    if (state.currentDb === "investments") return state.investments;
     return state.transactions;
 }
 
 function setCurrentDbList(list) {
     if (state.currentDb === "debts") state.debts = list;
     else if (state.currentDb === "subscriptions") state.subscriptions = list;
+    else if (state.currentDb === "savings") state.savings = list;
+    else if (state.currentDb === "investments") state.investments = list;
     else state.transactions = list;
 }
 
@@ -131,6 +135,8 @@ function configureQuickAddFormForDb(dbId) {
     const fieldLoanDate = document.getElementById("fieldQuickLoanDate");
     const fieldRepayDate = document.getElementById("fieldQuickRepayDate");
 
+    const labelQuickType = document.getElementById("labelQuickType");
+
     if (dbId === "debts") {
         if (fieldPerson) fieldPerson.style.display = "flex";
         if (fieldLoanDate) fieldLoanDate.style.display = "flex";
@@ -162,9 +168,60 @@ function configureQuickAddFormForDb(dbId) {
         if (fieldKind) fieldKind.style.display = "none";
         if (filterTypeWrapper) filterTypeWrapper.style.display = "flex";
 
+        if (labelQuickType) labelQuickType.textContent = "Typ";
         if (labelQuickName) labelQuickName.textContent = "Nazwa *";
         if (labelQuickAmount) labelQuickAmount.textContent = "Koszt *";
         state.quickKind = "expense";
+    } else if (dbId === "savings") {
+        if (fieldPerson) fieldPerson.style.display = "none";
+        if (fieldLoanDate) fieldLoanDate.style.display = "none";
+        if (fieldRepayDate) fieldRepayDate.style.display = "none";
+        if (fieldType) fieldType.style.display = "flex";
+        if (fieldSavings) fieldSavings.style.display = "none";
+        if (fieldKind) fieldKind.style.display = "flex";
+        if (filterTypeWrapper) filterTypeWrapper.style.display = "flex";
+
+        if (labelQuickType) labelQuickType.textContent = "Pochodzenie (source)";
+        if (labelQuickName) labelQuickName.textContent = "Nazwa *";
+        if (labelQuickAmount) labelQuickAmount.textContent = "Kwota *";
+        if (labelQuickKind) labelQuickKind.textContent = "Rodzaj wpisu";
+
+        if (btnKindExpense) {
+            btnKindExpense.textContent = "Wypłata (-)";
+            btnKindExpense.className = "btn-flow active flow-expense";
+        }
+        if (btnKindIncome) {
+            btnKindIncome.textContent = "Wpłata (+)";
+            btnKindIncome.className = "btn-flow flow-income";
+        }
+        state.quickKind = "income";
+        if (btnKindExpense && btnKindIncome) {
+            btnKindExpense.className = "btn-flow flow-expense";
+            btnKindIncome.className = "btn-flow active flow-income";
+        }
+    } else if (dbId === "investments") {
+        if (fieldPerson) fieldPerson.style.display = "none";
+        if (fieldLoanDate) fieldLoanDate.style.display = "none";
+        if (fieldRepayDate) fieldRepayDate.style.display = "none";
+        if (fieldType) fieldType.style.display = "flex";
+        if (fieldSavings) fieldSavings.style.display = "none";
+        if (fieldKind) fieldKind.style.display = "flex";
+        if (filterTypeWrapper) filterTypeWrapper.style.display = "flex";
+
+        if (labelQuickType) labelQuickType.textContent = "Typ inwestycji";
+        if (labelQuickName) labelQuickName.textContent = "Nazwa *";
+        if (labelQuickAmount) labelQuickAmount.textContent = "Kwota *";
+        if (labelQuickKind) labelQuickKind.textContent = "Rodzaj transakcji";
+
+        if (btnKindExpense) {
+            btnKindExpense.textContent = "Sprzedaż (-)";
+            btnKindExpense.className = "btn-flow flow-expense";
+        }
+        if (btnKindIncome) {
+            btnKindIncome.textContent = "Kupno (+)";
+            btnKindIncome.className = "btn-flow active flow-income";
+        }
+        state.quickKind = "income";
     } else {
         if (fieldPerson) fieldPerson.style.display = "none";
         if (fieldLoanDate) fieldLoanDate.style.display = "none";
@@ -174,6 +231,7 @@ function configureQuickAddFormForDb(dbId) {
         if (fieldKind) fieldKind.style.display = "flex";
         if (filterTypeWrapper) filterTypeWrapper.style.display = "flex";
 
+        if (labelQuickType) labelQuickType.textContent = "Typ";
         if (labelQuickName) labelQuickName.textContent = "Nazwa *";
         if (labelQuickAmount) labelQuickAmount.textContent = "Kwota *";
         const labelQuickSavings = document.getElementById("labelQuickSavings");
@@ -216,10 +274,18 @@ function populateTypeDropdowns() {
     const quickSelectType = document.getElementById("quickSelectType");
     const editEntryType = document.getElementById("editEntryType");
 
+    let currentOptions = state.types;
+    if (state.currentDb === "savings") {
+        currentOptions = state.sources;
+    } else if (state.currentDb === "investments") {
+        currentOptions = state.invtypes;
+    }
+
     if (filterTypeSelect) {
         const currentVal = filterTypeSelect.value;
-        filterTypeSelect.innerHTML = '<option value="all">Wszystkie typy</option>';
-        state.types.forEach(t => {
+        const defaultLabel = (state.currentDb === "savings") ? "Wszystkie źródła" : "Wszystkie typy";
+        filterTypeSelect.innerHTML = `<option value="all">${defaultLabel}</option>`;
+        currentOptions.forEach(t => {
             const opt = document.createElement("option");
             opt.value = t;
             opt.textContent = t;
@@ -231,7 +297,7 @@ function populateTypeDropdowns() {
     [quickSelectType, editEntryType].forEach(sel => {
         if (sel) {
             sel.innerHTML = "";
-            state.types.forEach(t => {
+            currentOptions.forEach(t => {
                 const opt = document.createElement("option");
                 opt.value = t;
                 opt.textContent = t;
@@ -243,16 +309,53 @@ function populateTypeDropdowns() {
 
 // Inicjalizacja danych z test_data/ lub chmury
 async function checkInitialData() {
+    // Wczytanie z cache typów transakcji, źródeł oszczędności i typów inwestycji
+    const cachedTypes = localStorage.getItem(CACHE_KEYS.TYPES);
+    if (cachedTypes) {
+        try {
+            const parsedTypes = JSON.parse(cachedTypes);
+            if (Array.isArray(parsedTypes) && parsedTypes.length > 0) {
+                state.types = parsedTypes;
+            }
+        } catch (e) { }
+    }
+
+    const cachedSources = localStorage.getItem(CACHE_KEYS.SOURCES);
+    if (cachedSources) {
+        try {
+            const parsedSources = JSON.parse(cachedSources);
+            if (Array.isArray(parsedSources) && parsedSources.length > 0) {
+                state.sources = parsedSources;
+            }
+        } catch (e) { }
+    }
+
+    const cachedInvtypes = localStorage.getItem(CACHE_KEYS.INVTYPES);
+    if (cachedInvtypes) {
+        try {
+            const parsedInv = JSON.parse(cachedInvtypes);
+            if (Array.isArray(parsedInv) && parsedInv.length > 0) {
+                state.invtypes = parsedInv;
+            }
+        } catch (e) { }
+    }
+
+    populateTypeDropdowns();
+
     if (state.isAdmin) {
         const cachedTrans = localStorage.getItem(CACHE_KEYS.TRANSACTIONS_REAL);
-        if (cachedTrans) { try { state.transactions = JSON.parse(cachedTrans); } catch (e) {} }
+        if (cachedTrans) { try { state.transactions = JSON.parse(cachedTrans); } catch (e) { } }
+        const cachedSavings = localStorage.getItem(CACHE_KEYS.SAVINGS_REAL);
+        if (cachedSavings) { try { state.savings = JSON.parse(cachedSavings); } catch (e) { } }
         const cachedDebts = localStorage.getItem(CACHE_KEYS.DEBTS_REAL);
-        if (cachedDebts) { try { state.debts = JSON.parse(cachedDebts); } catch (e) {} }
+        if (cachedDebts) { try { state.debts = JSON.parse(cachedDebts); } catch (e) { } }
         const cachedSubs = localStorage.getItem(CACHE_KEYS.SUBSCRIPTIONS_REAL);
-        if (cachedSubs) { try { state.subscriptions = JSON.parse(cachedSubs); } catch (e) {} }
+        if (cachedSubs) { try { state.subscriptions = JSON.parse(cachedSubs); } catch (e) { } }
+        const cachedInv = localStorage.getItem(CACHE_KEYS.INVESTMENTS_REAL);
+        if (cachedInv) { try { state.investments = JSON.parse(cachedInv); } catch (e) { } }
 
         // Jeśli brakuje danych w pamięci podręcznej przy starcie, pobieramy je z chmury raz na starcie
-        if (!cachedTrans || !cachedDebts || !cachedSubs) {
+        if (!cachedTrans || !cachedSavings || !cachedDebts || !cachedSubs || !cachedInv || !cachedTypes) {
             fetchAllDatabasesFromBackend(false);
         }
     } else {
@@ -262,8 +365,10 @@ async function checkInitialData() {
 
 async function reloadFakeData() {
     await loadCsvForDb("transactions");
+    await loadCsvForDb("savings");
     await loadCsvForDb("debts");
     await loadCsvForDb("subscriptions");
+    await loadCsvForDb("investments");
 }
 
 async function loadCsvForDb(dbId) {
@@ -277,14 +382,62 @@ async function loadCsvForDb(dbId) {
 
         if (dbId === "transactions") {
             state.transactions = parseCsvTransactions(csvText);
+        } else if (dbId === "savings") {
+            state.savings = parseCsvSavings(csvText);
         } else if (dbId === "debts") {
             state.debts = parseCsvDebts(csvText);
         } else if (dbId === "subscriptions") {
             state.subscriptions = parseCsvSubscriptions(csvText);
+        } else if (dbId === "investments") {
+            state.investments = parseCsvInvestments(csvText);
         }
     } catch (err) {
         console.warn("Błąd ładowania pliku CSV dla " + dbId, err);
     }
+}
+
+function parseCsvSavings(csv) {
+    const lines = csv.trim().split(/\r?\n/);
+    if (lines.length <= 1) return [];
+
+    const items = [];
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const parts = line.split(",");
+        if (parts.length >= 5) {
+            items.push({
+                id: parseInt(parts[0], 10) || i,
+                name: parts[1].trim(),
+                source: parts[2].trim(),
+                amount: parseFloat(parts[3]) || 0,
+                date: parts[4].trim()
+            });
+        }
+    }
+    return items;
+}
+
+function parseCsvInvestments(csv) {
+    const lines = csv.trim().split(/\r?\n/);
+    if (lines.length <= 1) return [];
+
+    const items = [];
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const parts = line.split(",");
+        if (parts.length >= 5) {
+            items.push({
+                id: parseInt(parts[0], 10) || i,
+                name: parts[1].trim(),
+                type: parts[2].trim(),
+                amount: parseFloat(parts[3]) || 0,
+                date: parts[4].trim()
+            });
+        }
+    }
+    return items;
 }
 
 function parseCsvTransactions(csv) {
@@ -363,16 +516,25 @@ function parseCsvSubscriptions(csv) {
 function updateDashboardStats() {
     const balanceElem = document.getElementById("statAccountBalance");
     const bufferElem = document.getElementById("statFinancialBuffer");
+    const investElem = document.getElementById("statInvestmentBalance");
 
     if (!balanceElem || !bufferElem) return;
 
     const statsDivider = document.getElementById("statsDivider");
     const statsMonthsBlock = document.getElementById("statsMonthsBlock");
-    const kpiBlock1 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(2)");
-    if (kpiBlock1) kpiBlock1.style.display = "flex";
+    const kpiBlockAccount = document.getElementById("kpiBlockAccount");
+    const kpiBlockBuffer = document.getElementById("kpiBlockBuffer");
+    const kpiBlockInvest = document.getElementById("kpiBlockInvestment");
 
+    const labelAccount = document.getElementById("statAccountBalanceLabel");
+    const labelBuffer = document.getElementById("statFinancialBufferLabel");
+
+    if (kpiBlockAccount) kpiBlockAccount.style.display = "flex";
+    if (kpiBlockBuffer) kpiBlockBuffer.style.display = "flex";
+    if (kpiBlockInvest) kpiBlockInvest.style.display = "none";
+
+    // 1. DŁUGI
     if (state.currentDb === "debts") {
-        // Dla długów:
         let unpaidToMe = 0;
         let unpaidToOthers = 0;
 
@@ -388,24 +550,19 @@ function updateDashboardStats() {
             }
         });
 
-        // 1. blok: Osoby dłużne u mnie
         balanceElem.textContent = unpaidToMe.toFixed(2) + " zł";
         balanceElem.className = "stats-kpi-val positive";
-        const label1 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(2) .stats-kpi-label");
-        if (label1) label1.textContent = "Dłużni u mnie (niespłacone)";
+        if (labelAccount) labelAccount.textContent = "Dłużni u mnie (niespłacone)";
 
-        // 2. blok: U których dłużny jestem ja
         bufferElem.textContent = unpaidToOthers.toFixed(2) + " zł";
         bufferElem.className = "stats-kpi-val negative";
-        const label2 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(3) .stats-kpi-label");
-        if (label2) label2.textContent = "Moje długi (niespłacone)";
+        if (labelBuffer) labelBuffer.textContent = "Moje długi (niespłacone)";
 
         if (statsDivider) statsDivider.style.display = "block";
         if (statsMonthsBlock) {
             statsMonthsBlock.style.display = "flex";
             statsMonthsBlock.innerHTML = "";
 
-            // Agregacja osób z niepozamykanymi sprawami
             const personsToMe = {};
             const personsToOthers = {};
 
@@ -422,7 +579,6 @@ function updateDashboardStats() {
                 }
             });
 
-            // Kategoria 1: Długi u mnie (ktoś mi wisi)
             const cardToMe = document.createElement("div");
             cardToMe.className = "stats-month-category";
             const personsToMeKeys = Object.keys(personsToMe);
@@ -453,7 +609,6 @@ function updateDashboardStats() {
             `;
             statsMonthsBlock.appendChild(cardToMe);
 
-            // Kategoria 2: Dług u osoby (ja komuś wiszę)
             const cardToOthers = document.createElement("div");
             cardToOthers.className = "stats-month-category";
             const personsToOthersKeys = Object.keys(personsToOthers);
@@ -487,10 +642,10 @@ function updateDashboardStats() {
         return;
     }
 
+    // 2. SUBSKRYPCJE
     if (state.currentDb === "subscriptions") {
-        // Łączny koszt poniesiony w transakcjach na wszystkie subskrypcje
         let totalSpentOnAllSubs = 0;
-        const subOccurrences = {}; // nazwa -> { count, totalSpent }
+        const subOccurrences = {};
 
         state.subscriptions.forEach(s => {
             const subName = (s.name || "").trim().toLowerCase();
@@ -501,12 +656,10 @@ function updateDashboardStats() {
             };
         });
 
-        // Przeliczenie w bazie transakcji
         state.transactions.forEach(t => {
             const tName = (t.name || "").trim().toLowerCase();
             const tAmt = Math.abs(parseFloat(t.amount) || 0);
 
-            // Sprawdzamy czy transakcja odpowiada którejś z subskrypcji
             Object.keys(subOccurrences).forEach(subKey => {
                 if (tName === subKey || tName.includes(subKey) || subKey.includes(tName)) {
                     subOccurrences[subKey].count += 1;
@@ -516,12 +669,8 @@ function updateDashboardStats() {
             });
         });
 
-        const kpiBlock1 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(2)");
-        const label2 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(3) .stats-kpi-label");
-        
-        // Ukrywamy klocek 'Koszty cykliczne' zgodnie z prośbą
-        if (kpiBlock1) kpiBlock1.style.display = "none";
-        if (label2) label2.textContent = "Łącznie wydane";
+        if (kpiBlockAccount) kpiBlockAccount.style.display = "none";
+        if (labelBuffer) labelBuffer.textContent = "Łącznie wydane";
 
         bufferElem.textContent = "-" + totalSpentOnAllSubs.toFixed(2) + " zł";
         bufferElem.className = "stats-kpi-val negative";
@@ -570,41 +719,178 @@ function updateDashboardStats() {
         return;
     }
 
-    // Reset wyświetlania dla transakcji
+    // 3. OSZCZĘDNOŚCI
+    if (state.currentDb === "savings") {
+        let totalSavings = 0;
+        state.savings.forEach(s => {
+            totalSavings += parseFloat(s.amount) || 0;
+        });
+
+        if (labelAccount) labelAccount.textContent = "Stan konta oszczędnościowego";
+        balanceElem.textContent = (totalSavings >= 0 ? "+" : "") + totalSavings.toFixed(2) + " zł";
+        balanceElem.className = "stats-kpi-val savings";
+        balanceElem.style.color = "";
+
+        // Drugi blok: ukrywamy
+        if (kpiBlockBuffer) kpiBlockBuffer.style.display = "none";
+
+        if (statsDivider) statsDivider.style.display = "block";
+        if (statsMonthsBlock) {
+            statsMonthsBlock.style.display = "flex";
+            statsMonthsBlock.innerHTML = "";
+
+            const now = new Date();
+            const monthsData = [
+                getMonthlySavingsStats(state.savings, now.getFullYear(), now.getMonth()),
+                getMonthlySavingsStats(state.savings, getRelativeYear(now, -1), getRelativeMonth(now, -1)),
+                getMonthlySavingsStats(state.savings, getRelativeYear(now, -2), getRelativeMonth(now, -2))
+            ];
+
+            monthsData.forEach(m => {
+                const card = document.createElement("div");
+                card.className = "stats-month-category";
+
+                const sign = m.total >= 0 ? "+" : "";
+                const totalColor = m.total >= 0 ? "#58a6ff" : "#ff7b72";
+
+                let subitemsHtml = "";
+                const srcKeys = Object.keys(m.bySource);
+
+                if (srcKeys.length === 0) {
+                    subitemsHtml = `<div class="stats-month-empty">Brak wpisów w tym miesiącu</div>`;
+                } else {
+                    srcKeys.forEach(srcName => {
+                        const amt = m.bySource[srcName];
+                        const subSign = amt >= 0 ? "+" : "";
+                        subitemsHtml += `
+                            <div class="stats-month-subrow">
+                                <span class="stats-month-sublabel">${escapeHtml(srcName)}</span>
+                                <span class="stats-month-subval" style="color: #58a6ff;">${subSign}${amt.toFixed(2)} zł</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                card.innerHTML = `
+                    <div class="stats-month-cat-header">
+                        <span class="stats-month-cat-title">${escapeHtml(m.name)}</span>
+                        <span class="stats-month-cat-total" style="color: ${totalColor};">${sign}${m.total.toFixed(2)} zł</span>
+                    </div>
+                    <div class="stats-month-subitems">
+                        ${subitemsHtml}
+                    </div>
+                `;
+                statsMonthsBlock.appendChild(card);
+            });
+        }
+        return;
+    }
+
+    // 4. INWESTYCJE
+    if (state.currentDb === "investments") {
+        let totalInvestments = 0;
+        state.investments.forEach(inv => {
+            totalInvestments += parseFloat(inv.amount) || 0;
+        });
+
+        if (labelAccount) labelAccount.textContent = "Stan konta inwestycyjnego";
+        balanceElem.textContent = (totalInvestments >= 0 ? "+" : "") + totalInvestments.toFixed(2) + " zł";
+        balanceElem.className = "stats-kpi-val";
+        balanceElem.style.color = "#d29922";
+
+        if (kpiBlockBuffer) kpiBlockBuffer.style.display = "none";
+
+        if (statsDivider) statsDivider.style.display = "block";
+        if (statsMonthsBlock) {
+            statsMonthsBlock.style.display = "flex";
+            statsMonthsBlock.innerHTML = "";
+
+            const now = new Date();
+            const monthsData = [
+                getMonthlyInvestStats(state.investments, now.getFullYear(), now.getMonth()),
+                getMonthlyInvestStats(state.investments, getRelativeYear(now, -1), getRelativeMonth(now, -1)),
+                getMonthlyInvestStats(state.investments, getRelativeYear(now, -2), getRelativeMonth(now, -2))
+            ];
+
+            monthsData.forEach(m => {
+                const card = document.createElement("div");
+                card.className = "stats-month-category";
+
+                const sign = m.total >= 0 ? "+" : "";
+                let subitemsHtml = "";
+                const typeKeys = Object.keys(m.byType);
+
+                if (typeKeys.length === 0) {
+                    subitemsHtml = `<div class="stats-month-empty">Brak inwestycji w tym miesiącu</div>`;
+                } else {
+                    typeKeys.forEach(typeName => {
+                        const amt = m.byType[typeName];
+                        const subSign = amt >= 0 ? "+" : "";
+                        subitemsHtml += `
+                            <div class="stats-month-subrow">
+                                <span class="stats-month-sublabel">${escapeHtml(typeName)}</span>
+                                <span class="stats-month-subval" style="color: #d29922;">${subSign}${amt.toFixed(2)} zł</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                card.innerHTML = `
+                    <div class="stats-month-cat-header">
+                        <span class="stats-month-cat-title">${escapeHtml(m.name)}</span>
+                        <span class="stats-month-cat-total" style="color: #d29922;">${sign}${m.total.toFixed(2)} zł</span>
+                    </div>
+                    <div class="stats-month-subitems">
+                        ${subitemsHtml}
+                    </div>
+                `;
+                statsMonthsBlock.appendChild(card);
+            });
+        }
+        return;
+    }
+
+    // 5. TRANSAKCJE (DOMYŚLNY WIDOK)
     if (statsDivider) statsDivider.style.display = "block";
     if (statsMonthsBlock) statsMonthsBlock.style.display = "flex";
 
-    const label1 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(2) .stats-kpi-label");
-    const label2 = document.querySelector("#dashboardStatsSidebar .stats-kpi-block:nth-child(3) .stats-kpi-label");
-    if (label1) label1.textContent = "Stan konta";
-    if (label2) label2.textContent = "Poduszka finansowa";
+    if (labelAccount) labelAccount.textContent = "Stan konta";
+    if (labelBuffer) labelBuffer.textContent = "Konto oszczędnościowe";
 
     // 1. Stan konta: suma wszystkich transakcji
     let totalBalance = 0;
-    // 2. Poduszka finansowa: suma transakcji o typie "Oszczędności" + suma skarbonek ze wszystkich transakcji
-    let financialBuffer = 0;
-
     const list = state.transactions;
     list.forEach(t => {
         const amt = parseFloat(t.amount) || 0;
         totalBalance += amt;
+    });
 
-        if ((t.type || "").toLowerCase() === "oszczędności") {
-            financialBuffer += Math.abs(amt);
-        }
-        const sav = parseFloat(t.savings) || 0;
-        if (sav > 0) {
-            financialBuffer += Math.abs(sav);
-        }
+    // 2. Konto oszczędnościowe: suma z bazy oszczędności (dokładnie ta sama co stan konta oszczędnościowego)
+    let totalSavings = 0;
+    state.savings.forEach(s => {
+        totalSavings += parseFloat(s.amount) || 0;
     });
 
     balanceElem.textContent = (totalBalance >= 0 ? "+" : "") + totalBalance.toFixed(2) + " zł";
     balanceElem.className = "stats-kpi-val " + (totalBalance >= 0 ? "positive" : "negative");
+    balanceElem.style.color = "";
 
-    bufferElem.textContent = financialBuffer.toFixed(2) + " zł";
+    bufferElem.textContent = (totalSavings >= 0 ? "+" : "") + totalSavings.toFixed(2) + " zł";
     bufferElem.className = "stats-kpi-val savings";
+    bufferElem.style.color = "";
 
-    // 3. Stany na 3 kolejne miesiące (bieżący M0, M-1, M-2) - rozwinięte na kategorie
+    // Stan konta inwestycyjnego w zakładce Transakcje
+    let totalInvestments = 0;
+    state.investments.forEach(inv => {
+        totalInvestments += parseFloat(inv.amount) || 0;
+    });
+    if (kpiBlockInvest && investElem) {
+        kpiBlockInvest.style.display = "flex";
+        investElem.style.color = "#d29922";
+        investElem.textContent = (totalInvestments >= 0 ? "+" : "") + totalInvestments.toFixed(2) + " zł";
+    }
+
+    // 3. Stany na 3 kolejne miesiące (bieżący M0, M-1, M-2)
     if (statsMonthsBlock) {
         statsMonthsBlock.innerHTML = "";
 
@@ -628,7 +914,6 @@ function updateDashboardStats() {
             if (typesKeys.length === 0 && m.piggyBank === 0) {
                 subitemsHtml = `<div class="stats-month-empty">Brak transakcji w tym miesiącu</div>`;
             } else {
-                // 1. Nad linią: kategorie odwzorowujące stan konta głównego (szare etykiety z czerwonymi/zielonymi wartościami)
                 typesKeys.forEach(typeName => {
                     const amt = m.byType[typeName];
                     const subSign = amt >= 0 ? "+" : "";
@@ -641,11 +926,11 @@ function updateDashboardStats() {
                     `;
                 });
 
-                // 2. Pod linią: odzwierciedlenie stanu poduszki finansowej (zawsze na niebiesko)
                 const hasSavingsBuffer = m.savingsBuffer > 0;
                 const hasPiggyBank = m.piggyBank > 0;
+                const hasInvestments = m.investmentsTotal > 0;
 
-                if (hasSavingsBuffer || hasPiggyBank) {
+                if (hasSavingsBuffer || hasPiggyBank || hasInvestments) {
                     subitemsHtml += `<div class="stats-month-divider-buffer"></div>`;
 
                     if (hasSavingsBuffer) {
@@ -662,6 +947,15 @@ function updateDashboardStats() {
                             <div class="stats-month-subrow stats-month-subrow-buffer">
                                 <span class="stats-month-sublabel" style="color: #58a6ff; font-weight: 500;">Skarbonka</span>
                                 <span class="stats-month-subval" style="color: #58a6ff;">+${m.piggyBank.toFixed(2)} zł</span>
+                            </div>
+                        `;
+                    }
+
+                    if (hasInvestments) {
+                        subitemsHtml += `
+                            <div class="stats-month-subrow stats-month-subrow-buffer">
+                                <span class="stats-month-sublabel" style="color: #d29922; font-weight: 500;">Inwestycje</span>
+                                <span class="stats-month-subval" style="color: #d29922;">+${m.investmentsTotal.toFixed(2)} zł</span>
                             </div>
                         `;
                     }
@@ -683,6 +977,58 @@ function updateDashboardStats() {
     }
 }
 
+function getMonthlySavingsStats(savingsList, year, month) {
+    const monthNames = [
+        "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
+        "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"
+    ];
+    let total = 0;
+    const bySource = {};
+
+    savingsList.forEach(s => {
+        if (!s.date) return;
+        const d = new Date(s.date);
+        if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month) {
+            const amt = parseFloat(s.amount) || 0;
+            total += amt;
+            const srcKey = s.source ? s.source.trim() : "Inne";
+            bySource[srcKey] = (bySource[srcKey] || 0) + amt;
+        }
+    });
+
+    return {
+        name: monthNames[month] + " " + year,
+        total: total,
+        bySource: bySource
+    };
+}
+
+function getMonthlyInvestStats(investList, year, month) {
+    const monthNames = [
+        "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
+        "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"
+    ];
+    let total = 0;
+    const byType = {};
+
+    investList.forEach(inv => {
+        if (!inv.date) return;
+        const d = new Date(inv.date);
+        if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month) {
+            const amt = parseFloat(inv.amount) || 0;
+            total += amt;
+            const typeKey = inv.type ? inv.type.trim() : "Inne";
+            byType[typeKey] = (byType[typeKey] || 0) + amt;
+        }
+    });
+
+    return {
+        name: monthNames[month] + " " + year,
+        total: total,
+        byType: byType
+    };
+}
+
 function getRelativeYear(date, offsetMonths) {
     const d = new Date(date.getFullYear(), date.getMonth() + offsetMonths, 1);
     return d.getFullYear();
@@ -701,6 +1047,7 @@ function getMonthlyStats(transactions, year, month) {
     let total = 0;
     let piggyBank = 0;
     let savingsBuffer = 0;
+    let investmentsTotal = 0;
     const byType = {};
 
     transactions.forEach(t => {
@@ -726,11 +1073,21 @@ function getMonthlyStats(transactions, year, month) {
         }
     });
 
+    // Suma inwestycji z danego miesiąca z bazy inwestycji
+    state.investments.forEach(inv => {
+        if (!inv.date) return;
+        const d = new Date(inv.date);
+        if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month) {
+            investmentsTotal += parseFloat(inv.amount) || 0;
+        }
+    });
+
     return {
         name: `${monthNames[month]} ${year}`,
         total: total,
         piggyBank: piggyBank,
         savingsBuffer: savingsBuffer,
+        investmentsTotal: investmentsTotal,
         byType: byType
     };
 }
@@ -762,6 +1119,28 @@ function renderTableHeader() {
                 <th style="width: 110px; text-align: center;">Pierwsza opłata</th>
                 <th style="width: 110px; text-align: center;">Ostatnia opłata</th>
                 <th style="width: 70px; text-align: center;">Akcje</th>
+            </tr>
+        `;
+    } else if (state.currentDb === "savings") {
+        thead.innerHTML = `
+            <tr>
+                <th style="width: 50px;">ID</th>
+                <th>Nazwa</th>
+                <th style="width: 180px;">Pochodzenie</th>
+                <th style="width: 140px; text-align: right;">Kwota</th>
+                <th style="width: 110px; text-align: center;">Data</th>
+                <th style="width: 80px; text-align: center;">Akcje</th>
+            </tr>
+        `;
+    } else if (state.currentDb === "investments") {
+        thead.innerHTML = `
+            <tr>
+                <th style="width: 50px;">ID</th>
+                <th>Nazwa</th>
+                <th style="width: 180px;">Typ inwestycji</th>
+                <th style="width: 140px; text-align: right;">Kwota</th>
+                <th style="width: 110px; text-align: center;">Data</th>
+                <th style="width: 80px; text-align: center;">Akcje</th>
             </tr>
         `;
     } else {
@@ -798,7 +1177,11 @@ function renderTransactionsTable() {
 
     // Filtr typu
     if (state.currentDb !== "debts" && state.filters.type && state.filters.type !== "all") {
-        items = items.filter(t => t.type === state.filters.type);
+        if (state.currentDb === "savings") {
+            items = items.filter(t => t.source === state.filters.type);
+        } else {
+            items = items.filter(t => t.type === state.filters.type);
+        }
     }
 
     // Sortowanie (przy równej dacie drugorzędnym kryterium jest ID malejące)
@@ -852,7 +1235,7 @@ function renderTransactionsTable() {
             if (state.currentDb === "debts") {
                 const isSettled = !!(t.repayment_date && String(t.repayment_date).trim() !== "");
                 const isToMe = (t.debt_type || "").trim() === "Dług u mnie"; // ktoś wisi mnie (w drugą stronę -> zysk -> zielony)
-                
+
                 let rowClass = "";
                 let amountClass = "";
                 if (isSettled) {
@@ -908,11 +1291,55 @@ function renderTransactionsTable() {
                         </div>
                     </td>
                 `;
+            } else if (state.currentDb === "savings") {
+                const isIncome = Number(t.amount || 0) >= 0;
+                const amtVal = Math.abs(Number(t.amount || 0));
+                const sign = isIncome ? "+" : "-";
+                const rowClass = isIncome ? "row-income" : "row-expense";
+
+                tr.className = rowClass;
+                tr.innerHTML = `
+                    <td class="td-id">${t.id}</td>
+                    <td class="td-name" style="font-weight: 500;">${escapeHtml(t.name || "")}</td>
+                    <td class="td-type"><span class="type-badge" style="background-color: rgba(88, 166, 255, 0.15); color: #58a6ff;">${escapeHtml(t.source || "Oszczędności")}</span></td>
+                    <td class="td-amount" style="text-align: right; white-space: nowrap;"><span class="amount-cell ${isIncome ? 'amount-savings-blue' : 'amount-expense'}">${sign}${amtVal.toFixed(2)} zł</span></td>
+                    <td class="td-date" style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.date)}</td>
+                    <td class="td-actions" style="text-align: center;">
+                        <div class="row-actions-dropdown">
+                            <button type="button" class="btn-row-more" title="Więcej akcji">•••</button>
+                            <div class="row-actions-menu" style="display: none;">
+                                <button type="button" class="row-action-item action-edit">Edytuj</button>
+                            </div>
+                        </div>
+                    </td>
+                `;
+            } else if (state.currentDb === "investments") {
+                const isIncome = Number(t.amount || 0) >= 0;
+                const amtVal = Math.abs(Number(t.amount || 0));
+                const sign = isIncome ? "+" : "-";
+                const rowClass = isIncome ? "row-income" : "row-expense";
+
+                tr.className = rowClass;
+                tr.innerHTML = `
+                    <td class="td-id">${t.id}</td>
+                    <td class="td-name" style="font-weight: 500;">${escapeHtml(t.name || "")}</td>
+                    <td class="td-type"><span class="type-badge" style="background-color: rgba(210, 153, 34, 0.15); color: #d29922;">${escapeHtml(t.type || "ETFy")}</span></td>
+                    <td class="td-amount" style="text-align: right; white-space: nowrap;"><span class="amount-cell" style="color: ${isIncome ? '#d29922' : '#ff7b72'}; font-weight: bold;">${sign}${amtVal.toFixed(2)} zł</span></td>
+                    <td class="td-date" style="text-align: center; color: var(--color-text-muted); font-size: 14px;">${formatDateDisplay(t.date)}</td>
+                    <td class="td-actions" style="text-align: center;">
+                        <div class="row-actions-dropdown">
+                            <button type="button" class="btn-row-more" title="Więcej akcji">•••</button>
+                            <div class="row-actions-menu" style="display: none;">
+                                <button type="button" class="row-action-item action-edit">Edytuj</button>
+                            </div>
+                        </div>
+                    </td>
+                `;
             } else {
                 // TRANSACTIONS:
                 const isSavingsType = (t.type || "").toLowerCase() === "oszczędności";
                 const isIncome = t.amount >= 0;
-                
+
                 let rowClass = isIncome ? "row-income" : "row-expense";
                 if (isSavingsType) rowClass = "row-savings";
 
@@ -1099,6 +1526,28 @@ function handleQuickAddSubmit(e) {
             first_payment: todayStr,
             last_payment: todayStr
         };
+    } else if (state.currentDb === "savings") {
+        const finalAmount = state.quickKind === "expense" ? -baseAmount : baseAmount;
+        const sourceVal = selectType.value || "Oszczędności";
+
+        newRecord = {
+            id: newId,
+            name: name,
+            source: sourceVal,
+            amount: finalAmount,
+            date: todayStr
+        };
+    } else if (state.currentDb === "investments") {
+        const finalAmount = state.quickKind === "expense" ? -baseAmount : baseAmount;
+        const invTypeVal = selectType.value || "ETFy";
+
+        newRecord = {
+            id: newId,
+            name: name,
+            type: invTypeVal,
+            amount: finalAmount,
+            date: todayStr
+        };
     } else {
         const finalAmount = state.quickKind === "expense" ? -baseAmount : baseAmount;
         const type = selectType.value || "Codzienny";
@@ -1127,6 +1576,73 @@ function handleQuickAddSubmit(e) {
             savings: savingsVal,
             date: todayStr
         };
+
+        // AUTONOMIA DLA KARTY OSZCZĘDNOŚCI I INWESTYCJI PRZY WPISIE W TRANSAKCJACH:
+        // 1. Jeśli transakcja ma typ "Oszczędności":
+        //    Wpisujemy do bazy oszczędności z odwróconym znakiem
+        if (type.toLowerCase() === "oszczędności") {
+            const autoSavingsId = state.savings.reduce((max, s) => Math.max(max, Number(s.id) || 0), 0) + 1;
+            const autoSavingsRecord = {
+                id: autoSavingsId,
+                name: name,
+                source: "Oszczędności",
+                amount: -finalAmount,
+                date: todayStr
+            };
+            state.savings.unshift(autoSavingsRecord);
+            if (state.isAdmin) {
+                try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) { }
+            }
+            enqueueSyncTask({
+                type: "addSavings",
+                db: "savings",
+                data: autoSavingsRecord
+            });
+        }
+
+        // 2. Jeśli transakcja ma zaznaczone oszczędności (skarbonkę):
+        //    Wpisujemy do bazy oszczędności z pochodzeniem "Końcówka rachunku"
+        if (savingsVal > 0) {
+            const autoSkarbonkaId = state.savings.reduce((max, s) => Math.max(max, Number(s.id) || 0), 0) + 1;
+            const autoSkarbonkaRecord = {
+                id: autoSkarbonkaId,
+                name: name ? `${name} (Końcówka)` : "Końcówka rachunku",
+                source: "Końcówka rachunku",
+                amount: savingsVal,
+                date: todayStr
+            };
+            state.savings.unshift(autoSkarbonkaRecord);
+            if (state.isAdmin) {
+                try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) { }
+            }
+            enqueueSyncTask({
+                type: "addSavings",
+                db: "savings",
+                data: autoSkarbonkaRecord
+            });
+        }
+
+        // 3. Jeśli transakcja ma typ "Inwestycja":
+        //    Wpisujemy do bazy inwestycji
+        if (type.toLowerCase() === "inwestycja") {
+            const autoInvestId = state.investments.reduce((max, inv) => Math.max(max, Number(inv.id) || 0), 0) + 1;
+            const autoInvestRecord = {
+                id: autoInvestId,
+                name: name,
+                type: "ETFy",
+                amount: Math.abs(finalAmount),
+                date: todayStr
+            };
+            state.investments.unshift(autoInvestRecord);
+            if (state.isAdmin) {
+                try { localStorage.setItem(CACHE_KEYS.INVESTMENTS_REAL, JSON.stringify(state.investments)); } catch (e) { }
+            }
+            enqueueSyncTask({
+                type: "addInvestments",
+                db: "investments",
+                data: autoInvestRecord
+            });
+        }
     }
 
     // Optimistic UI: natychmiastowe wstawienie na początek widoku
@@ -1317,7 +1833,7 @@ function openEntryEditModal(id = null, prefillData = null) {
     if (editEntryId) editEntryId.value = isNew ? "" : entry.id;
     if (editEntryName) editEntryName.value = isNew ? prefillName : (entry.name || "");
     if (editEntryAmount) editEntryAmount.value = amtVal;
-    
+
     const rawDate = isNew ? prefillDate : (entry.date || entry.loan_date || entry.first_payment || todayStr);
     if (editEntryDate) editEntryDate.value = formatDateToInput(rawDate) || todayStr;
 
@@ -1330,7 +1846,7 @@ function openEntryEditModal(id = null, prefillData = null) {
     if (effectiveDb === "debts") {
         if (groupPerson) groupPerson.style.display = "block";
         if (editEntryPerson && !isNew) editEntryPerson.value = entry.person || "";
-        
+
         // W długach ukrywamy zwykły select typu długu na rzecz przycisków rodzaju długu: Dług u mnie / Dług u osoby
         if (groupDebtType) groupDebtType.style.display = "none";
         if (groupType) groupType.style.display = "none";
@@ -1360,6 +1876,13 @@ function openEntryEditModal(id = null, prefillData = null) {
 
         if (groupType) groupType.style.display = "block";
         if (editEntryType) {
+            editEntryType.innerHTML = "";
+            state.types.forEach(t => {
+                const opt = document.createElement("option");
+                opt.value = t;
+                opt.textContent = t;
+                editEntryType.appendChild(opt);
+            });
             editEntryType.value = isNew ? prefillType : (entry.type || "Codzienny");
         }
 
@@ -1374,6 +1897,62 @@ function openEntryEditModal(id = null, prefillData = null) {
             btnModalKindExpense.className = "btn-flow flow-expense" + (isSubExpense ? " active" : "");
             btnModalKindIncome.className = "btn-flow flow-income" + (!isSubExpense ? " active" : "");
         }
+    } else if (effectiveDb === "savings") {
+        if (groupPerson) groupPerson.style.display = "none";
+        if (groupDebtType) groupDebtType.style.display = "none";
+        if (groupRepaymentDate) groupRepaymentDate.style.display = "none";
+        if (groupSavings) groupSavings.style.display = "none";
+
+        if (groupType) groupType.style.display = "block";
+        if (editEntryType) {
+            editEntryType.innerHTML = "";
+            state.sources.forEach(s => {
+                const opt = document.createElement("option");
+                opt.value = s;
+                opt.textContent = s;
+                editEntryType.appendChild(opt);
+            });
+            editEntryType.value = isNew ? (prefillData && prefillData.source ? prefillData.source : "Oszczędności") : (entry.source || "Oszczędności");
+        }
+
+        if (groupKind) groupKind.style.display = "block";
+        if (labelEditKind) labelEditKind.textContent = "Rodzaj wpisu";
+        if (btnModalKindExpense) btnModalKindExpense.textContent = "Wypłata (-)";
+        if (btnModalKindIncome) btnModalKindIncome.textContent = "Wpłata (+)";
+
+        const isSavingsIncome = isNew ? true : (Number(entry.amount || 0) >= 0);
+        if (btnModalKindExpense && btnModalKindIncome) {
+            btnModalKindExpense.className = "btn-flow flow-expense" + (!isSavingsIncome ? " active" : "");
+            btnModalKindIncome.className = "btn-flow flow-income" + (isSavingsIncome ? " active" : "");
+        }
+    } else if (effectiveDb === "investments") {
+        if (groupPerson) groupPerson.style.display = "none";
+        if (groupDebtType) groupDebtType.style.display = "none";
+        if (groupRepaymentDate) groupRepaymentDate.style.display = "none";
+        if (groupSavings) groupSavings.style.display = "none";
+
+        if (groupType) groupType.style.display = "block";
+        if (editEntryType) {
+            editEntryType.innerHTML = "";
+            state.invtypes.forEach(it => {
+                const opt = document.createElement("option");
+                opt.value = it;
+                opt.textContent = it;
+                editEntryType.appendChild(opt);
+            });
+            editEntryType.value = isNew ? (prefillData && prefillData.type ? prefillData.type : "ETFy") : (entry.type || "ETFy");
+        }
+
+        if (groupKind) groupKind.style.display = "block";
+        if (labelEditKind) labelEditKind.textContent = "Rodzaj transakcji";
+        if (btnModalKindExpense) btnModalKindExpense.textContent = "Sprzedaż (-)";
+        if (btnModalKindIncome) btnModalKindIncome.textContent = "Kupno (+)";
+
+        const isInvestIncome = isNew ? true : (Number(entry.amount || 0) >= 0);
+        if (btnModalKindExpense && btnModalKindIncome) {
+            btnModalKindExpense.className = "btn-flow flow-expense" + (!isInvestIncome ? " active" : "");
+            btnModalKindIncome.className = "btn-flow flow-income" + (isInvestIncome ? " active" : "");
+        }
     } else {
         // Transakcje
         if (groupPerson) groupPerson.style.display = "none";
@@ -1382,6 +1961,13 @@ function openEntryEditModal(id = null, prefillData = null) {
 
         if (groupType) groupType.style.display = "block";
         if (editEntryType) {
+            editEntryType.innerHTML = "";
+            state.types.forEach(t => {
+                const opt = document.createElement("option");
+                opt.value = t;
+                opt.textContent = t;
+                editEntryType.appendChild(opt);
+            });
             editEntryType.value = isNew ? prefillType : (entry.type || "Codzienny");
         }
 
@@ -1412,7 +1998,13 @@ function handleEntryEditSubmit(e) {
     const idVal = document.getElementById("editEntryId").value;
     const isNew = !idVal;
     const targetDb = pendingTargetDb || state.currentDb;
-    const list = (targetDb === "transactions") ? state.transactions : ((targetDb === "debts") ? state.debts : state.subscriptions);
+    let list;
+    if (targetDb === "transactions") list = state.transactions;
+    else if (targetDb === "debts") list = state.debts;
+    else if (targetDb === "subscriptions") list = state.subscriptions;
+    else if (targetDb === "savings") list = state.savings;
+    else if (targetDb === "investments") list = state.investments;
+    else list = state.transactions;
 
     const name = document.getElementById("editEntryName").value.trim();
     const rawAmount = Math.abs(parseFloat(document.getElementById("editEntryAmount").value) || 0);
@@ -1455,6 +2047,22 @@ function handleEntryEditSubmit(e) {
                 first_payment: document.getElementById("editEntryDate").value || todayStr,
                 last_payment: todayStr
             };
+        } else if (targetDb === "savings") {
+            newRecord = {
+                id: newId,
+                name: name,
+                source: document.getElementById("editEntryType").value || "Oszczędności",
+                amount: finalAmount,
+                date: document.getElementById("editEntryDate").value || todayStr
+            };
+        } else if (targetDb === "investments") {
+            newRecord = {
+                id: newId,
+                name: name,
+                type: document.getElementById("editEntryType").value || "ETFy",
+                amount: finalAmount,
+                date: document.getElementById("editEntryDate").value || todayStr
+            };
         } else {
             newRecord = {
                 id: newId,
@@ -1474,7 +2082,7 @@ function handleEntryEditSubmit(e) {
             if (cachedTransactions || state.isAdmin) {
                 try {
                     localStorage.setItem(CACHE_KEYS.TRANSACTIONS_REAL, JSON.stringify(state.transactions));
-                } catch (err) {}
+                } catch (err) { }
             }
         } else {
             saveCurrentDbToCache();
@@ -1502,7 +2110,7 @@ function handleEntryEditSubmit(e) {
                 if (cachedSubs || state.isAdmin) {
                     try {
                         localStorage.setItem(CACHE_KEYS.SUBSCRIPTIONS_REAL, JSON.stringify(state.subscriptions));
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 enqueueSyncTask({
                     type: "editSubscription",
@@ -1535,6 +2143,14 @@ function handleEntryEditSubmit(e) {
         entry.type = document.getElementById("editEntryType").value;
         entry.first_payment = document.getElementById("editEntryDate").value;
         entry.savings = 0;
+    } else if (state.currentDb === "savings") {
+        entry.amount = finalAmount;
+        entry.source = document.getElementById("editEntryType").value;
+        entry.date = document.getElementById("editEntryDate").value;
+    } else if (state.currentDb === "investments") {
+        entry.amount = finalAmount;
+        entry.type = document.getElementById("editEntryType").value;
+        entry.date = document.getElementById("editEntryDate").value;
     } else {
         entry.amount = finalAmount;
         entry.type = document.getElementById("editEntryType").value;
@@ -1709,6 +2325,7 @@ function handleRenameType(oldType, newType) {
     });
 
     saveCurrentDbToCache();
+    try { localStorage.setItem(CACHE_KEYS.TYPES, JSON.stringify(state.types)); } catch (e) { }
     populateTypeDropdowns();
     renderTypesManagementList();
     renderTransactionsTable();
@@ -1741,6 +2358,7 @@ function handleAddType() {
 
     if (errorBox) errorBox.style.display = "none";
     state.types.push(val);
+    try { localStorage.setItem(CACHE_KEYS.TYPES, JSON.stringify(state.types)); } catch (e) { }
     populateTypeDropdowns();
     renderTypesManagementList();
     if (input) input.value = "";
@@ -1758,6 +2376,7 @@ function handleDeleteType(typeName) {
         message: "Czy na pewno chcesz usunąć typ \"" + typeName + "\" z ustawień bazy? Tej operacji nie można cofnąć.",
         onConfirm: () => {
             state.types = state.types.filter(t => t !== typeName);
+            try { localStorage.setItem(CACHE_KEYS.TYPES, JSON.stringify(state.types)); } catch (e) { }
             populateTypeDropdowns();
             renderTypesManagementList();
 
@@ -1786,32 +2405,58 @@ async function fetchAllDatabasesFromBackend(showSkeleton = false) {
     }
 
     try {
-        const [transRes, debtsRes, subsRes, typesRes] = await Promise.all([
+        const [transRes, savingsRes, debtsRes, subsRes, investRes, typesRes, sourcesRes, invtypesRes] = await Promise.all([
             callBackendJsonp({ action: "getTransactions", pass: state.adminPassword }),
+            callBackendJsonp({ action: "getSavings", pass: state.adminPassword }),
             callBackendJsonp({ action: "getDebts", pass: state.adminPassword }),
             callBackendJsonp({ action: "getSubscriptions", pass: state.adminPassword }),
-            callBackendJsonp({ action: "getTypes", pass: state.adminPassword })
+            callBackendJsonp({ action: "getInvestments", pass: state.adminPassword }),
+            callBackendJsonp({ action: "getTypes", pass: state.adminPassword }),
+            callBackendJsonp({ action: "getSources", pass: state.adminPassword }),
+            callBackendJsonp({ action: "getInvtypes", pass: state.adminPassword })
         ]);
 
         if (transRes && transRes.status === "success" && Array.isArray(transRes.data)) {
             state.transactions = transRes.data;
-            try { localStorage.setItem(CACHE_KEYS.TRANSACTIONS_REAL, JSON.stringify(state.transactions)); } catch (e) {}
+            try { localStorage.setItem(CACHE_KEYS.TRANSACTIONS_REAL, JSON.stringify(state.transactions)); } catch (e) { }
+        }
+
+        if (savingsRes && savingsRes.status === "success" && Array.isArray(savingsRes.data)) {
+            state.savings = savingsRes.data;
+            try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) { }
         }
 
         if (debtsRes && debtsRes.status === "success" && Array.isArray(debtsRes.data)) {
             state.debts = debtsRes.data;
-            try { localStorage.setItem(CACHE_KEYS.DEBTS_REAL, JSON.stringify(state.debts)); } catch (e) {}
+            try { localStorage.setItem(CACHE_KEYS.DEBTS_REAL, JSON.stringify(state.debts)); } catch (e) { }
         }
 
         if (subsRes && subsRes.status === "success" && Array.isArray(subsRes.data)) {
             state.subscriptions = subsRes.data;
-            try { localStorage.setItem(CACHE_KEYS.SUBSCRIPTIONS_REAL, JSON.stringify(state.subscriptions)); } catch (e) {}
+            try { localStorage.setItem(CACHE_KEYS.SUBSCRIPTIONS_REAL, JSON.stringify(state.subscriptions)); } catch (e) { }
+        }
+
+        if (investRes && investRes.status === "success" && Array.isArray(investRes.data)) {
+            state.investments = investRes.data;
+            try { localStorage.setItem(CACHE_KEYS.INVESTMENTS_REAL, JSON.stringify(state.investments)); } catch (e) { }
         }
 
         if (typesRes && typesRes.status === "success" && Array.isArray(typesRes.data)) {
             state.types = typesRes.data;
-            populateTypeDropdowns();
+            try { localStorage.setItem(CACHE_KEYS.TYPES, JSON.stringify(state.types)); } catch (e) { }
         }
+
+        if (sourcesRes && sourcesRes.status === "success" && Array.isArray(sourcesRes.data)) {
+            state.sources = sourcesRes.data;
+            try { localStorage.setItem(CACHE_KEYS.SOURCES, JSON.stringify(state.sources)); } catch (e) { }
+        }
+
+        if (invtypesRes && invtypesRes.status === "success" && Array.isArray(invtypesRes.data)) {
+            state.invtypes = invtypesRes.data;
+            try { localStorage.setItem(CACHE_KEYS.INVTYPES, JSON.stringify(state.invtypes)); } catch (e) { }
+        }
+
+        populateTypeDropdowns();
 
         populatePersonDatalist();
         renderTransactionsTable();

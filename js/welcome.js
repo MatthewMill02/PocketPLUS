@@ -22,11 +22,13 @@ function renderWelcomeScatterHeads() {
     if (!container) return;
     container.innerHTML = "";
 
-    // 3 kafelki faktycznych danych + atrapy z icon.png
+    // Kafelki faktycznych danych + atrapy z icon.png
     const tiles = [
         { type: "db", dbId: "transactions", name: "Matthew", img: "assets/Matthew.PNG", avatarClass: "" },
+        { type: "db", dbId: "savings", name: "Oszczędności", img: "assets/Matthew.PNG", avatarClass: "avatar-blue" },
         { type: "db", dbId: "debts", name: "Marco", img: "assets/Matthew.PNG", avatarClass: "avatar-purple" },
         { type: "db", dbId: "subscriptions", name: "Manhattan", img: "assets/Matthew.PNG", avatarClass: "avatar-red" },
+        { type: "db", dbId: "investments", name: "Inwestycje", img: "assets/Matthew.PNG", avatarClass: "avatar-burgundy" },
         { type: "decoy", name: "Gość", img: "assets/icon.png", avatarClass: "" },
         { type: "decoy", name: "Archiwum", img: "assets/icon.png", avatarClass: "" },
         { type: "decoy", name: "Audyt", img: "assets/icon.png", avatarClass: "" }
@@ -35,12 +37,14 @@ function renderWelcomeScatterHeads() {
     const shuffled = [...tiles].sort(() => Math.random() - 0.5);
 
     const positions = [
-        { top: "18%", left: "15%" },
-        { top: "20%", right: "18%" },
-        { bottom: "18%", left: "18%" },
-        { bottom: "22%", right: "16%" },
-        { top: "50%", left: "10%" },
-        { top: "52%", right: "12%" }
+        { top: "15%", left: "12%" },
+        { top: "18%", right: "14%" },
+        { bottom: "16%", left: "14%" },
+        { bottom: "18%", right: "12%" },
+        { top: "45%", left: "8%" },
+        { top: "48%", right: "8%" },
+        { top: "25%", left: "32%" },
+        { bottom: "25%", right: "32%" }
     ];
 
     const isLocked = isCurrentlyLocked();

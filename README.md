@@ -1,12 +1,34 @@
-# PocketPLUS (wersja 1.2)
+# PocketPLUS (wersja 1.3)
 
-Prosta i przejrzysta aplikacja internetowa do rejestrowania i zarządzania codziennym budżetem, wydatkami, długami oraz subskrypcjami.
+Prosta i przejrzysta aplikacja internetowa do rejestrowania i zarządzania codziennym budżetem, wydatkami, długami, oszczędnościami, subskrypcjami oraz inwestycjami.
 
 ## Stos technologiczny
 - **Frontend**: HTML5, Vanilla CSS, Vanilla JavaScript (ES6+), modułowa struktura plików.
 - **Hosting**: GitHub Pages.
 - **Baza danych & Backend**: Arkusze Google (Google Spreadsheets) za pośrednictwem skryptu Google Apps Script udostępniającego API przez protokół JSONP.
 - **Autoryzacja**: Hasło dostępu konfigurowane we właściwościach skryptu Google Apps Script (`Script Properties`).
+
+## Nowości w wersji 1.3
+- **Dwie nowe zakładki danych**:
+  - **Oszczędności** (niebieski motyw, dedykowane tło `background4.png`):
+    - Struktura kolumn: ID, Nazwa, Pochodzenie (`source`), Kwota, Data, Akcje.
+    - Własny stan konta oszczędnościowego oraz podsumowania miesięcy z rozbiciem na źródła (`Oszczędności`, `Końcówka rachunku`, `Oprocentowanie`, `Wyrównanie`).
+    - Autonomia: transakcje z typem "Oszczędności" są automatycznie wpisywane do bazy oszczędności (z odwróconym znakiem), a kwota skarbonki z transakcji jest automatycznie zapisywana jako wpis z pochodzeniem "Końcówka rachunku".
+  - **Inwestycje** (bordowy motyw, dedykowane tło `background5.png`):
+    - Struktura kolumn: ID, Nazwa, Typ inwestycji (`type`: `ETFy`, `Złoto`, `Srebro`), Kwota, Data, Akcje.
+    - Własny stan konta inwestycyjnego oraz podsumowania miesięcy.
+    - Autonomia: transakcje z typem "Inwestycja" są automatycznie przekazywane do bazy inwestycji.
+- **Rozszerzone podsumowanie w Transakcjach**:
+  - Kafelek "Konto oszczędnościowe" (w kolorze niebieskim) prezentuje dokładną sumę z bazy oszczędności.
+  - Dodano kafelek "Konto inwestycyjne" (w kolorze złotym) prezentujący łączną sumę portfela inwestycyjnego.
+  - W podsumowaniach miesięcy pod pozycjami oszczędności i skarbonki wyświetla się również suma inwestycji z danego miesiąca.
+- **Optymalizacja nawigacji**:
+  - Ustalona kolejność zakładek: Transakcje -> Oszczędności -> Długi -> Subskrypcje -> Inwestycje.
+  - Zwiększona szerokość paska zakładek i wewnętrzny margines przycisków, zapobiegający ucinaniu tekstu.
+- **Poprawki stabilności i logowania na telefonie**:
+  - Pełna synchronizacja stanu logowania w bocznym menu mobilnym (prawidłowe ukrywanie przycisku dostępu i wyświetlanie opcji ustawień oraz wylogowania).
+  - Trwałe zapamiętywanie typów, źródeł i kategorii inwestycji w pamięci podręcznej offline.
+  - Poprawa zachowania lewego panelu statystyk, który teraz naturalnie rozpycha stronę, zapobiegając nachodzeniu na stopkę.
 
 ## Nowości w wersji 1.2
 - **Dopracowanie filtrów na komputerach i telefonach**:

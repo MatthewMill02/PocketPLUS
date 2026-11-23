@@ -89,6 +89,14 @@ body.screen-welcome {
 }
 
 /* Kolorystyczne filtry na awatary */
+.avatar-blue {
+    filter: hue-rotate(180deg) saturate(2) contrast(1.1);
+}
+
+.avatar-burgundy {
+    filter: hue-rotate(300deg) saturate(1.8) contrast(1.2) brightness(0.8);
+}
+
 .avatar-purple {
     filter: hue-rotate(240deg) saturate(1.8) contrast(1.1);
 }

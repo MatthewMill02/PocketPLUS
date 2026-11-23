@@ -117,15 +117,28 @@ function updateAdminUi() {
     const btnLogoutAdmin = document.getElementById("btnLogoutAdmin");
     const syncWrapper = document.getElementById("syncStatusWrapper");
 
+    // Elementy w menu bocznym (drawer na telefonie)
+    const btnDrawerAccess = document.getElementById("btnDrawerAccess");
+    const btnDrawerSettings = document.getElementById("btnDrawerSettings");
+    const btnDrawerLogout = document.getElementById("btnDrawerLogout");
+
     if (syncWrapper) syncWrapper.style.display = "flex";
 
     if (state.isAdmin) {
         if (btnAdminModal) btnAdminModal.style.display = "none";
         if (btnSettings) btnSettings.style.display = "inline-block";
         if (btnLogoutAdmin) btnLogoutAdmin.style.display = "inline-flex";
+
+        if (btnDrawerAccess) btnDrawerAccess.style.display = "none";
+        if (btnDrawerSettings) btnDrawerSettings.style.display = "flex";
+        if (btnDrawerLogout) btnDrawerLogout.style.display = "flex";
     } else {
         if (btnAdminModal) btnAdminModal.style.display = "inline-block";
         if (btnSettings) btnSettings.style.display = "none";
         if (btnLogoutAdmin) btnLogoutAdmin.style.display = "none";
+
+        if (btnDrawerAccess) btnDrawerAccess.style.display = "flex";
+        if (btnDrawerSettings) btnDrawerSettings.style.display = "none";
+        if (btnDrawerLogout) btnDrawerLogout.style.display = "none";
     }
 }

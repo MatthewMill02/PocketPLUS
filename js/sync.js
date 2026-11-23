@@ -65,14 +65,24 @@ function updateSyncStatusBadge() {
 
             const typeLabels = {
                 addTransactions: "Dodanie transakcji",
+                addTransaction: "Dodanie transakcji",
                 editTransaction: "Edycja transakcji",
                 deleteTransaction: "Usunięcie transakcji",
+                addSavings: "Dodanie oszczędności",
+                editSaving: "Edycja oszczędności",
+                deleteSavings: "Usunięcie oszczędności",
                 addDebts: "Dodanie długu",
+                addDebt: "Dodanie długu",
                 editDebt: "Edycja długu",
                 deleteDebt: "Usunięcie długu",
                 addSubscriptions: "Dodanie subskrypcji",
+                addSubscription: "Dodanie subskrypcji",
                 editSubscription: "Edycja subskrypcji",
                 deleteSubscription: "Usunięcie subskrypcji",
+                addInvestments: "Dodanie inwestycji",
+                addInvestment: "Dodanie inwestycji",
+                editInvestment: "Edycja inwestycji",
+                deleteInvestments: "Usunięcie inwestycji",
                 addType: "Nowy typ",
                 deleteType: "Usunięcie typu"
             };
