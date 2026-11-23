@@ -55,6 +55,10 @@ function openDashboardScreen(dbId = "transactions") {
     state.infiniteScroll.renderedCount = state.infiniteScroll.batchSize;
     state.infiniteScroll.allLoaded = false;
     state.infiniteScroll.isLoadingMore = false;
+    if (state.selectedRowIds) {
+        state.selectedRowIds.clear();
+    }
+    updateSelectionSummaryUi();
     renderTransactionsTable();
     updateDashboardStats();
 }
@@ -1231,6 +1235,8 @@ function renderTransactionsTable() {
 
         pageItems.forEach(t => {
             const tr = document.createElement("tr");
+            const itemId = Number(t.id);
+            const isRowSelected = state.selectedRowIds.has(itemId);
 
             if (state.currentDb === "debts") {
                 const isSettled = !!(t.repayment_date && String(t.repayment_date).trim() !== "");
@@ -1253,7 +1259,7 @@ function renderTransactionsTable() {
 
                 const repaymentText = isSettled ? formatDateDisplay(t.repayment_date) : "<span style='color:var(--color-text-muted);'>Niespłacony</span>";
 
-                tr.className = rowClass;
+                tr.className = (rowClass + (isRowSelected ? " is-selected" : "")).trim();
                 tr.innerHTML = `
                     <td class="td-id">${t.id}</td>
                     <td class="td-person" style="font-weight: 600;">${escapeHtml(t.person || "")}</td>
@@ -1273,7 +1279,7 @@ function renderTransactionsTable() {
                     </td>
                 `;
             } else if (state.currentDb === "subscriptions") {
-                tr.className = "row-expense";
+                tr.className = ("row-expense" + (isRowSelected ? " is-selected" : "")).trim();
                 tr.innerHTML = `
                     <td class="td-id">${t.id}</td>
                     <td class="td-name" style="font-weight: 600;">${escapeHtml(t.name || "")}</td>
@@ -1297,7 +1303,7 @@ function renderTransactionsTable() {
                 const sign = isIncome ? "+" : "-";
                 const rowClass = isIncome ? "row-income" : "row-expense";
 
-                tr.className = rowClass;
+                tr.className = (rowClass + (isRowSelected ? " is-selected" : "")).trim();
                 tr.innerHTML = `
                     <td class="td-id">${t.id}</td>
                     <td class="td-name" style="font-weight: 500;">${escapeHtml(t.name || "")}</td>
@@ -1319,7 +1325,7 @@ function renderTransactionsTable() {
                 const sign = isIncome ? "+" : "-";
                 const rowClass = isIncome ? "row-income" : "row-expense";
 
-                tr.className = rowClass;
+                tr.className = (rowClass + (isRowSelected ? " is-selected" : "")).trim();
                 tr.innerHTML = `
                     <td class="td-id">${t.id}</td>
                     <td class="td-name" style="font-weight: 500;">${escapeHtml(t.name || "")}</td>
@@ -1374,7 +1380,7 @@ function renderTransactionsTable() {
                     }
                 }
 
-                tr.className = rowClass;
+                tr.className = (rowClass + (isRowSelected ? " is-selected" : "")).trim();
                 tr.innerHTML = `
                     <td class="td-id">${t.id}</td>
                     <td class="td-name" style="font-weight: 500;">${escapeHtml(t.name)}</td>
@@ -1391,6 +1397,22 @@ function renderTransactionsTable() {
                     </td>
                 `;
             }
+
+            // Obsługa kliknięcia w wiersz (desktop i telefon - zaznaczanie / odznaczanie)
+            tr.addEventListener("click", (e) => {
+                if (e.target.closest(".row-actions-dropdown")) {
+                    return;
+                }
+                const isCurrentlySelected = state.selectedRowIds.has(itemId);
+                if (isCurrentlySelected) {
+                    state.selectedRowIds.delete(itemId);
+                    tr.classList.remove("is-selected");
+                } else {
+                    state.selectedRowIds.add(itemId);
+                    tr.classList.add("is-selected");
+                }
+                updateSelectionSummaryUi();
+            });
 
             // Obsługa rozwijanego menu 3 kropek
             const btnMore = tr.querySelector(".btn-row-more");
@@ -1442,6 +1464,101 @@ function renderTransactionsTable() {
     }
 
     updateDashboardStats();
+    updateSelectionSummaryUi();
+}
+
+/**
+ * Aktualizacja dynamicznego podsumowania zaznaczonych rekordów
+ */
+function updateSelectionSummaryUi() {
+    const summaryWidget = document.getElementById("selectionSummaryWidget");
+    const countElem = document.getElementById("selectionSummaryCount");
+    const totalElem = document.getElementById("selectionSummaryTotal");
+    const savingsRow = document.getElementById("selectionSummarySavingsRow");
+    const savingsElem = document.getElementById("selectionSummarySavings");
+    const mobileBtn = document.getElementById("btnToggleMobileSelectionSummary");
+    const mobileCount = document.getElementById("mobileSelectionCount");
+
+    if (!summaryWidget || !countElem || !totalElem) return;
+
+    const selectedIds = state.selectedRowIds || new Set();
+    const count = selectedIds.size;
+
+    if (count === 0) {
+        summaryWidget.style.display = "none";
+        summaryWidget.classList.remove("mobile-open");
+        if (mobileBtn) {
+            mobileBtn.style.display = "none";
+        }
+        return;
+    }
+
+    // Obliczenie sumy zaznaczonych elementów oraz ewentualnej skarbonki
+    const currentList = getCurrentDbList();
+    let totalSum = 0;
+    let totalSavings = 0;
+
+    currentList.forEach(item => {
+        if (!selectedIds.has(Number(item.id))) return;
+
+        let amt = 0;
+        if (state.currentDb === "debts") {
+            const rawAmt = Number(item.amount) || 0;
+            // Dług u mnie to należność (+), dług u osoby to zobowiązanie (-)
+            if ((item.debt_type || "").trim() === "Dług u mnie") {
+                amt = rawAmt;
+            } else {
+                amt = -rawAmt;
+            }
+        } else if (state.currentDb === "subscriptions") {
+            // Subskrypcje to cykliczny wydatek
+            amt = -Math.abs(Number(item.amount) || 0);
+        } else {
+            // Transakcje, oszczędności, inwestycje
+            amt = Number(item.amount) || 0;
+            if (item.savings && Number(item.savings) > 0) {
+                totalSavings += Number(item.savings);
+            }
+        }
+        totalSum += amt;
+    });
+
+    countElem.textContent = count;
+    if (mobileCount) {
+        mobileCount.textContent = count;
+    }
+
+    // Formatowanie wyświetlanej sumy
+    const isPositive = totalSum >= 0;
+    const sign = isPositive ? "+" : "-";
+    const formattedSum = `${sign}${Math.abs(totalSum).toFixed(2)} zł`;
+
+    totalElem.textContent = formattedSum;
+    totalElem.className = `selection-stat-val selection-stat-total ${isPositive ? 'positive' : 'negative'}`;
+
+    // Podsumowanie skarbonki (groszy/końcówek)
+    if (savingsRow && savingsElem) {
+        if (totalSavings > 0) {
+            savingsRow.style.display = "flex";
+            savingsElem.textContent = `+${totalSavings.toFixed(2)} zł`;
+        } else {
+            savingsRow.style.display = "none";
+        }
+    }
+
+    // Widoczność na telefonie i pulpicie:
+    const isMobile = window.innerWidth <= 900;
+    if (isMobile) {
+        if (mobileBtn) {
+            mobileBtn.style.display = "inline-flex";
+        }
+        summaryWidget.style.display = "block";
+    } else {
+        if (mobileBtn) {
+            mobileBtn.style.display = "none";
+        }
+        summaryWidget.style.display = "block";
+    }
 }
 
 /**
@@ -2116,7 +2233,7 @@ function handleEntryEditSubmit(e) {
                 };
                 state.savings.unshift(autoSavingsRecord);
                 if (state.isAdmin) {
-                    try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) {}
+                    try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) { }
                 }
                 enqueueSyncTask({
                     type: "addSavings",
@@ -2137,7 +2254,7 @@ function handleEntryEditSubmit(e) {
                 };
                 state.savings.unshift(autoSkarbonkaRecord);
                 if (state.isAdmin) {
-                    try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) {}
+                    try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) { }
                 }
                 enqueueSyncTask({
                     type: "addSavings",
@@ -2158,7 +2275,7 @@ function handleEntryEditSubmit(e) {
                 };
                 state.investments.unshift(autoInvestRecord);
                 if (state.isAdmin) {
-                    try { localStorage.setItem(CACHE_KEYS.INVESTMENTS_REAL, JSON.stringify(state.investments)); } catch (e) {}
+                    try { localStorage.setItem(CACHE_KEYS.INVESTMENTS_REAL, JSON.stringify(state.investments)); } catch (e) { }
                 }
                 enqueueSyncTask({
                     type: "addInvestments",

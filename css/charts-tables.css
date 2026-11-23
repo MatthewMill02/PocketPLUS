@@ -80,6 +80,18 @@
     background-color: rgba(42, 49, 61, 0.4) !important;
 }
 
+/* Zaznaczony wiersz tabeli (desktop i tablet) */
+.pocket-table tr {
+    cursor: pointer;
+    transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.pocket-table tr.is-selected {
+    background-color: rgba(56, 139, 253, 0.22) !important;
+    outline: 1px solid #58a6ff;
+    box-shadow: inset 3px 0 0 #58a6ff;
+}
+
 .pocket-table tr:last-child td {
     border-bottom: none;
 }
@@ -358,7 +370,6 @@
     width: 20px;
     height: 20px;
     cursor: pointer;
-    accent-color: #3b5982;
     flex-shrink: 0;
     margin: 0;
 }
@@ -697,6 +708,13 @@
     .pocket-table td.td-id,
     .pocket-table td.td-repayment {
         display: none !important;
+    }
+
+    /* Na telefonie zaznaczony kafelek ma wyraźniejsze podświetlenie i obwódkę */
+    .pocket-table tr.is-selected {
+        background-color: rgba(56, 139, 253, 0.22) !important;
+        border-color: #58a6ff !important;
+        box-shadow: 0 0 0 1px #58a6ff, 0 3px 8px rgba(0, 0, 0, 0.3) !important;
     }
 
     /* 2. Nazwa wpisu i osoba: lewa góra */

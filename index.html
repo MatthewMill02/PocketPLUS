@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PocketPLUS - Budżet Codzienny</title>
+    <title>PocketPLUS</title>
     <meta name="description" content="Aplikacja do zarządzania codziennym budżetem i wydatkami.">
     <link rel="icon" type="image/png" href="assets/icon.png">
     <style>
@@ -171,11 +171,40 @@
             </button>
         </div>
 
-        <!-- Przycisk mobilny do otwierania panelu bocznego statystyk -->
-        <button type="button" id="btnToggleMobileStats" class="mobile-stats-toggle-btn">
-            <span>[Statystyki konta]</span>
-        </button>
+        <!-- Przyciski mobilne: Statystyki oraz Dynamiczne Podsumowanie zaznaczonych -->
+        <div class="mobile-top-actions-bar">
+            <button type="button" id="btnToggleMobileStats" class="mobile-stats-toggle-btn">
+                <span>[Statystyki konta]</span>
+            </button>
+            <button type="button" id="btnToggleMobileSelectionSummary" class="mobile-selection-toggle-btn" style="display: none;">
+                <span>[Podsumowanie (<span id="mobileSelectionCount">0</span>)]</span>
+            </button>
+        </div>
         <div id="mobileSidebarBackdrop" class="mobile-sidebar-backdrop"></div>
+
+        <!-- PŁYWAJĄCY WIDŻET DYNAMICZNEGO PODSUMOWANIA (DESKTOP / WIDOK GŁÓWNY) -->
+        <div id="selectionSummaryWidget" class="selection-summary-widget" style="display: none;">
+            <div class="selection-summary-content">
+                <div class="selection-summary-header">
+                    <span class="selection-summary-title">Podsumowanie zaznaczonych</span>
+                    <button type="button" id="btnClearSelection" class="selection-summary-clear" title="Odznacz wszystkie">[x]</button>
+                </div>
+                <div class="selection-summary-body">
+                    <div class="selection-summary-stat">
+                        <span class="selection-stat-label">Liczba rekordów:</span>
+                        <span id="selectionSummaryCount" class="selection-stat-val">0</span>
+                    </div>
+                    <div class="selection-summary-stat">
+                        <span class="selection-stat-label">Suma kwot:</span>
+                        <span id="selectionSummaryTotal" class="selection-stat-val selection-stat-total">0.00 zł</span>
+                    </div>
+                    <div class="selection-summary-stat" id="selectionSummarySavingsRow" style="display: none;">
+                        <span class="selection-stat-label">Do skarbonki:</span>
+                        <span id="selectionSummarySavings" class="selection-stat-val" style="color: #58a6ff; font-weight: 700;">+0.00 zł</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="dashboard-main-layout">
 
@@ -512,7 +541,7 @@
     <!-- STOPKA -->
     <footer class="app-footer" id="appFooter">
         <div class="footer-content">
-            <span>&copy; PocketPLUS | wersja 1.3</span>
+            <span>&copy; PocketPLUS | wersja 1.4</span>
         </div>
     </footer>
 

@@ -92,6 +92,8 @@ const state = {
         type: "all",
         sort: "date_desc"
     },
+    // Zaznaczone rekordy do dynamicznego podsumowania (zbiór ID)
+    selectedRowIds: new Set(),
     // Dynamiczne ładowanie rekordów (Infinite Scroll)
     infiniteScroll: {
         batchSize: 30,

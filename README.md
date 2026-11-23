@@ -1,4 +1,4 @@
-# PocketPLUS (wersja 1.3)
+# PocketPLUS (wersja 1.4)
 
 Prosta i przejrzysta aplikacja internetowa do rejestrowania i zarządzania codziennym budżetem, wydatkami, długami, oszczędnościami, subskrypcjami oraz inwestycjami.
 
@@ -7,6 +7,16 @@ Prosta i przejrzysta aplikacja internetowa do rejestrowania i zarządzania codzi
 - **Hosting**: GitHub Pages.
 - **Baza danych & Backend**: Arkusze Google (Google Spreadsheets) za pośrednictwem skryptu Google Apps Script udostępniającego API przez protokół JSONP.
 - **Autoryzacja**: Hasło dostępu konfigurowane we właściwościach skryptu Google Apps Script (`Script Properties`).
+
+## Nowości w wersji 1.4
+- **Dynamiczne podsumowanie zaznaczonych rekordów**:
+  - Kliknięcie w dowolny rekord (desktop oraz telefon) zaznacza go i wyróżnia wyraźnym kolorem tła oraz akcentowaną obwódką.
+  - Wybór co najmniej jednego rekordu natychmiast aktywuje pływający widżet w prawym dolnym rogu z łączną sumą kwot (właściwie pokolorowaną na zielono lub czerwono) oraz liczbą zaznaczonych wpisów.
+  - **Osobne podsumowanie skarbonki**: Jeżeli zaznaczone transakcje zawierają odłożone grosze do skarbonki (końcówki rachunków), widżet prezentuje dodatkową pozycję `Do skarbonki: +X.XX zł` w błękitnym kolorze.
+  - **Dedykowany panel mobilny**: Na telefonach zaznaczanie odbywa się stuknięciem w kartę, a na górnej belce pojawia się przycisk `[Podsumowanie (n)]`, który płynnie wysuwa panel z prawej strony ekranu.
+  - Możliwość natychmiastowego wyczyszczenia zaznaczenia przyciskiem `[x]`.
+- **Ciemny motyw dla pól wyboru**: Wszystkie checkboxy w formularzach i oknach dialogowych zyskały spójne, ciemne tło dopasowane do stylistyki PocketPLUS.
+- **Usprawnienia tytułu karty**: Nazwa aplikacji w oknie przeglądarki została uproszczona do "PocketPLUS".
 
 ## Nowości w wersji 1.3
 - **Dwie nowe zakładki danych**:

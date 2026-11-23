@@ -424,22 +424,66 @@ function initEvents() {
     const btnToggleMobileStats = document.getElementById("btnToggleMobileStats");
     const mobileSidebarBackdrop = document.getElementById("mobileSidebarBackdrop");
     const dashboardStatsSidebar = document.getElementById("dashboardStatsSidebar");
+    const selectionSummaryWidget = document.getElementById("selectionSummaryWidget");
 
     if (btnToggleMobileStats && dashboardStatsSidebar) {
         btnToggleMobileStats.addEventListener("click", () => {
+            // Jeśli panel podsumowania był otwarty, zamknij go
+            if (selectionSummaryWidget) selectionSummaryWidget.classList.remove("mobile-open");
+
             dashboardStatsSidebar.classList.toggle("mobile-open");
+            const isOpen = dashboardStatsSidebar.classList.contains("mobile-open");
             if (mobileSidebarBackdrop) {
-                mobileSidebarBackdrop.style.display = dashboardStatsSidebar.classList.contains("mobile-open") ? "block" : "none";
+                mobileSidebarBackdrop.style.display = isOpen ? "block" : "none";
             }
         });
     }
 
-    if (mobileSidebarBackdrop && dashboardStatsSidebar) {
+    if (mobileSidebarBackdrop) {
         mobileSidebarBackdrop.addEventListener("click", () => {
-            dashboardStatsSidebar.classList.remove("mobile-open");
+            if (dashboardStatsSidebar) dashboardStatsSidebar.classList.remove("mobile-open");
+            if (selectionSummaryWidget) selectionSummaryWidget.classList.remove("mobile-open");
             mobileSidebarBackdrop.style.display = "none";
         });
     }
+
+    // Dynamiczne podsumowanie zaznaczonych rekordów
+    const btnClearSelection = document.getElementById("btnClearSelection");
+    if (btnClearSelection) {
+        btnClearSelection.addEventListener("click", () => {
+            if (state.selectedRowIds) {
+                state.selectedRowIds.clear();
+            }
+            if (selectionSummaryWidget) {
+                selectionSummaryWidget.classList.remove("mobile-open");
+            }
+            if (mobileSidebarBackdrop && (!dashboardStatsSidebar || !dashboardStatsSidebar.classList.contains("mobile-open"))) {
+                mobileSidebarBackdrop.style.display = "none";
+            }
+            renderTransactionsTable();
+            updateSelectionSummaryUi();
+        });
+    }
+
+    const btnToggleMobileSelectionSummary = document.getElementById("btnToggleMobileSelectionSummary");
+    if (btnToggleMobileSelectionSummary && selectionSummaryWidget) {
+        btnToggleMobileSelectionSummary.addEventListener("click", () => {
+            // Jeśli panel statystyk był otwarty, zamknij go
+            if (dashboardStatsSidebar) dashboardStatsSidebar.classList.remove("mobile-open");
+
+            selectionSummaryWidget.classList.toggle("mobile-open");
+            const isOpen = selectionSummaryWidget.classList.contains("mobile-open");
+            if (mobileSidebarBackdrop) {
+                mobileSidebarBackdrop.style.display = isOpen ? "block" : "none";
+            }
+        });
+    }
+
+    window.addEventListener("resize", () => {
+        if (typeof updateSelectionSummaryUi === "function") {
+            updateSelectionSummaryUi();
+        }
+    });
 
     // Formularz szybkiego dodawania
     const quickAddForm = document.getElementById("quickAddForm");

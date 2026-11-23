@@ -1,4 +1,47 @@
-/* Style bazowe, reset i tło strony */
+/* Globalny styl dla checkboxów w ciemnym motywie */
+input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-grid;
+    place-content: center;
+    margin: 0;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+input[type="checkbox"]:hover {
+    border-color: #58a6ff;
+    background-color: #1f242c;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #1f6feb;
+    border-color: #388bfd;
+}
+
+input[type="checkbox"]:checked::before {
+    content: "";
+    width: 9px;
+    height: 5px;
+    border-left: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    transform: rotate(-45deg) translate(1px, -1px);
+}
+
+input[type="checkbox"]:indeterminate {
+    background-color: #1f6feb;
+    border-color: #388bfd;
+}
+
+input[type="checkbox"]:indeterminate::before {
+    content: "";
+    width: 8px;
+    height: 2px;
+    background-color: #ffffff;
+}
 * {
     box-sizing: border-box;
     margin: 0;
