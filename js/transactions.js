@@ -1606,7 +1606,7 @@ function handleQuickAddSubmit(e) {
             const autoSkarbonkaId = state.savings.reduce((max, s) => Math.max(max, Number(s.id) || 0), 0) + 1;
             const autoSkarbonkaRecord = {
                 id: autoSkarbonkaId,
-                name: name ? `${name} (Końcówka)` : "Końcówka rachunku",
+                name: name ? `${name} (Końcówka rachunku)` : "Końcówka rachunku",
                 source: "Końcówka rachunku",
                 amount: savingsVal,
                 date: todayStr
@@ -2098,6 +2098,77 @@ function handleEntryEditSubmit(e) {
             db: targetDb,
             data: newRecord
         });
+
+        // AUTONOMIA DLA KARTY OSZCZĘDNOŚCI I INWESTYCJI PRZY ZAPISIE TRANSAKCJI Z MODALU:
+        if (targetDb === "transactions") {
+            const transType = (newRecord.type || "").toLowerCase();
+            const transDate = newRecord.date || todayStr;
+
+            // 1. Jeśli transakcja ma typ "Oszczędności":
+            if (transType === "oszczędności") {
+                const autoSavingsId = state.savings.reduce((max, s) => Math.max(max, Number(s.id) || 0), 0) + 1;
+                const autoSavingsRecord = {
+                    id: autoSavingsId,
+                    name: name,
+                    source: "Oszczędności",
+                    amount: -newRecord.amount,
+                    date: transDate
+                };
+                state.savings.unshift(autoSavingsRecord);
+                if (state.isAdmin) {
+                    try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) {}
+                }
+                enqueueSyncTask({
+                    type: "addSavings",
+                    db: "savings",
+                    data: autoSavingsRecord
+                });
+            }
+
+            // 2. Jeśli w transakcji zaznaczono oszczędności (skarbonkę):
+            if (savingsVal > 0) {
+                const autoSkarbonkaId = state.savings.reduce((max, s) => Math.max(max, Number(s.id) || 0), 0) + 1;
+                const autoSkarbonkaRecord = {
+                    id: autoSkarbonkaId,
+                    name: name ? `${name} (Końcówka rachunku)` : "Końcówka rachunku",
+                    source: "Końcówka rachunku",
+                    amount: savingsVal,
+                    date: transDate
+                };
+                state.savings.unshift(autoSkarbonkaRecord);
+                if (state.isAdmin) {
+                    try { localStorage.setItem(CACHE_KEYS.SAVINGS_REAL, JSON.stringify(state.savings)); } catch (e) {}
+                }
+                enqueueSyncTask({
+                    type: "addSavings",
+                    db: "savings",
+                    data: autoSkarbonkaRecord
+                });
+            }
+
+            // 3. Jeśli transakcja ma typ "Inwestycja":
+            if (transType === "inwestycja") {
+                const autoInvestId = state.investments.reduce((max, inv) => Math.max(max, Number(inv.id) || 0), 0) + 1;
+                const autoInvestRecord = {
+                    id: autoInvestId,
+                    name: name,
+                    type: "ETFy",
+                    amount: Math.abs(newRecord.amount),
+                    date: transDate
+                };
+                state.investments.unshift(autoInvestRecord);
+                if (state.isAdmin) {
+                    try { localStorage.setItem(CACHE_KEYS.INVESTMENTS_REAL, JSON.stringify(state.investments)); } catch (e) {}
+                }
+                enqueueSyncTask({
+                    type: "addInvestments",
+                    db: "investments",
+                    data: autoInvestRecord
+                });
+            }
+
+            updateDashboardStats();
+        }
 
         // Jeśli transakcja pochodziła z akcji 'Zapisz transakcję' w subskrypcjach, aktualizujemy 'last_payment'
         if (pendingSubscriptionSource && pendingSubscriptionSource.id) {
